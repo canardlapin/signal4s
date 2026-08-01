@@ -148,6 +148,18 @@ class FftConvolutionPlanSuite extends munit.FunSuite:
     val expected = Convolution(signal, kernel, OutputRegion.Valid, ConvolutionMethod.Direct).orThrow
     assertClose(actual, expected)
 
+  test("planned region results remain immutable across workspace reuse"):
+    List(ConvolutionMethod.Fft, ConvolutionMethod.OverlapAdd(2)).foreach { method =>
+      List(OutputRegion.Valid, OutputRegion.Input(Boundary.Zero)).foreach { region =>
+        val plan = Convolution.plan(kernel, signal.length, region, method).orThrow
+        val first = plan(signal).orThrow
+        val second = plan(signal).orThrow
+        val expected = Convolution(signal, kernel, region, ConvolutionMethod.Direct).orThrow
+        assertClose(first, expected)
+        assertClose(second, expected)
+      }
+    }
+
   private def assertClose(actual: DVec, expected: DVec): Unit =
     assertEquals(actual.length, expected.length)
     var i = 0

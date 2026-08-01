@@ -52,6 +52,22 @@ object FftConvolveBench:
       sb.append(f"N=$n M=$m circularDirectMs=$direct%.4f circularFftMs=$fft%.4f\n")
     }
 
+    sb.append("\n# Planned FFT region extraction\n\n")
+    List((8192, 128), (16384, 2048)).foreach { case (n, m) =>
+      val x = Vec.tabulate(n)(i => math.sin(0.02 * i))
+      val k = Kernel.at(Vec.tabulate(m)(i => 1.0 / (i + 1)), zeroLagIndex = m / 2).orThrow
+      List(
+        "valid" -> OutputRegion.Valid,
+        "input" -> OutputRegion.Input(Boundary.Zero)
+      ).foreach { case (label, region) =>
+        val plan = Convolution.plan(k, n, region, ConvolutionMethod.Fft).orThrow
+        val ms = time(40) {
+          plan(x).orThrow(0)
+        }
+        sb.append(f"N=$n M=$m region=$label fftPlanReuseMs=$ms%.4f\n")
+      }
+    }
+
     val outDir = Paths.get("benchmarks", "receipts")
     Files.createDirectories(outDir)
     val out = outDir.resolve("e6-fft-convolve.md")

@@ -1,6 +1,6 @@
 package signal4s.fft
 
-import gale.linalg.{DVec, DVecBuilder}
+import gale.linalg.DVec
 import signal4s.*
 
 /** Overlap-add linear convolution with FFT block processing. */
@@ -45,16 +45,92 @@ private[fft] object OverlapAddConvolution:
       packIm: Array[Double],
       blockOut: Array[Double]
   ): Either[SignalError, DVec] =
+    val out = new Array[Double](signal.length + kernelLength - 1)
+    fullWithKernelSpectrumArraysInto(
+      signal,
+      kernelHalfRe,
+      kernelHalfIm,
+      kernelLength,
+      blockLength,
+      workRe,
+      workIm,
+      packRe,
+      packIm,
+      blockOut,
+      out
+    ).map(_ => FftConvolution.adoptFull(out, out.length))
+
+  /** Accumulates the full overlap-add result into caller-owned storage. */
+  private[fft] def fullWithKernelSpectrumArraysInto(
+      signal: DVec,
+      kernelHalfRe: Array[Double],
+      kernelHalfIm: Array[Double],
+      kernelLength: Int,
+      blockLength: Int,
+      workRe: Array[Double],
+      workIm: Array[Double],
+      packRe: Array[Double],
+      packIm: Array[Double],
+      blockOut: Array[Double],
+      out: Array[Double]
+  ): Either[SignalError, Unit] =
+    fullWithKernelSpectrumArraysIntoRegion(
+      signal,
+      kernelHalfRe,
+      kernelHalfIm,
+      kernelLength,
+      blockLength,
+      fullOutLen = signal.length + kernelLength - 1,
+      regionOffset = 0,
+      regionLength = signal.length + kernelLength - 1,
+      workRe,
+      workIm,
+      packRe,
+      packIm,
+      blockOut,
+      out
+    )
+
+  /** Accumulates a requested full-overlap-add region into caller-owned storage. */
+  private[fft] def fullWithKernelSpectrumArraysIntoRegion(
+      signal: DVec,
+      kernelHalfRe: Array[Double],
+      kernelHalfIm: Array[Double],
+      kernelLength: Int,
+      blockLength: Int,
+      fullOutLen: Int,
+      regionOffset: Int,
+      regionLength: Int,
+      workRe: Array[Double],
+      workIm: Array[Double],
+      packRe: Array[Double],
+      packIm: Array[Double],
+      blockOut: Array[Double],
+      out: Array[Double]
+  ): Either[SignalError, Unit] =
     if blockLength <= 0 then Left(SignalError.InvalidInputLength(blockLength))
     else
-      val outLen = signal.length + kernelLength - 1
       val nfft = (kernelHalfRe.length - 1) << 1
       if blockLength + kernelLength - 1 > nfft then
         Left(SignalError.LengthMismatch(nfft, blockLength + kernelLength - 1))
       else if blockOut.length < nfft then
         Left(SignalError.LengthMismatch(nfft, blockOut.length))
+      else if out.length < regionLength then
+        Left(SignalError.LengthMismatch(regionLength, out.length))
+      else if
+        fullOutLen != signal.length + kernelLength - 1 ||
+          regionOffset < 0 ||
+          regionLength < 0 ||
+          regionOffset + regionLength > fullOutLen
+      then
+        Left(
+          SignalError.NumericalFailure(
+            "OverlapAddConvolution",
+            s"invalid output region offset=$regionOffset length=$regionLength fullLength=$fullOutLen"
+          )
+        )
       else
-        val out = DVecBuilder.zeros(outLen)
+        java.util.Arrays.fill(out, 0, regionLength, 0.0)
         var pos = 0
         var err: Option[SignalError] = None
         while pos < signal.length && err.isEmpty do
@@ -78,9 +154,10 @@ private[fft] object OverlapAddConvolution:
               var i = 0
               while i < blockOutLen do
                 val dest = pos + i
-                if dest < outLen then out(dest) = out(dest) + blockOut(i)
+                if dest >= regionOffset && dest < regionOffset + regionLength then
+                  out(dest - regionOffset) += blockOut(i)
                 i += 1
           pos += blockLength
         err match
           case Some(e) => Left(e)
-          case None    => Right(out.result())
+          case None    => Right(())

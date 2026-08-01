@@ -121,11 +121,14 @@ merges them into `vs-scipy.md`.
   is now 0.41–1.37× SciPy without materializing the upsampled signal.
 - **FFT-conv:** with the packed JTransforms real backend, the symmetric planned
   grid is ≤1.0× SciPy (8192/128 is ~0.96×). One-shot timings are reported
-  separately because both implementations rebuild the kernel transform.
+  separately because both implementations rebuild the kernel transform. Planned
+  `Valid` and `Input(Zero)` calls copy only the requested post-IFFT region into
+  a region-sized result buffer.
 - **Real FFT:** workspace-reused `rfft` is 0.07–1.25× NumPy over lengths
   64–8192. Even-length `RealFftPlan`, Welch, and STFT share this backend.
-- **Overlap-add:** plans retain FFT and block buffers; each apply allocates only
-  the immutable final result rather than slices and transform arrays per block.
+- **Overlap-add:** plans retain FFT and block buffers plus a region-sized
+  accumulation buffer. Each apply allocates only the immutable requested result,
+  not a full intermediate result or a region slice.
 
 Receipts use a full settle pass, then the **median of 7 trials** (100 iters,
 50 warm-up) on both sides.

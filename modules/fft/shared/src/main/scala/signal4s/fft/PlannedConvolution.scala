@@ -5,9 +5,9 @@ import signal4s.*
 
 /** [[ConvolutionPlan]] that reuses a transformed kernel spectrum when using FFT/OLA.
   *
-  * FFT plans also retain mutable FFT work buffers. [[apply]] is therefore
-  * single-owner / not thread-safe for [[ConvolutionMethod.Fft]] (same discipline
-  * as filter runners). Direct plans remain pure.
+  * FFT and overlap-add plans retain mutable FFT and output-accumulation buffers.
+  * [[apply]] is therefore single-owner / not thread-safe for those methods (same
+  * discipline as filter runners). Direct plans remain pure.
   */
 final class PlannedConvolution private (
     val kernel: Kernel,
@@ -19,7 +19,8 @@ final class PlannedConvolution private (
     private val workIm: Array[Double],
     private val packRe: Array[Double],
     private val packIm: Array[Double],
-    private val outBuf: Array[Double]
+    private val outBuf: Array[Double],
+    private val accumulationBuf: Array[Double]
 ) extends ConvolutionPlan:
 
   def apply(signal: DVec): Either[SignalError, DVec] =
@@ -35,38 +36,52 @@ final class PlannedConvolution private (
               Left(SignalError.NumericalFailure("ConvolutionPlan", "missing kernel spectrum"))
             case Some((kr, ki)) =>
               val outLen = signal.length + kernel.length - 1
-              FftConvolution
-                .fullWithKernelSpectrumArraysInto(
-                  signal,
-                  kr,
-                  ki,
-                  outLen,
-                  workRe,
-                  workIm,
-                  packRe,
-                  packIm,
-                  outBuf
-                )
-                .flatMap(full => FftConvolution.extractRegion(full, signal.length, kernel, region))
+              FftConvolution.regionBounds(signal.length, kernel, region).flatMap {
+                case (_, 0) => Right(DVec.zeros(0))
+                case (offset, length) =>
+                  FftConvolution
+                    .fullWithKernelSpectrumArraysIntoRegion(
+                      signal,
+                      kr,
+                      ki,
+                      outLen,
+                      offset,
+                      length,
+                      workRe,
+                      workIm,
+                      packRe,
+                      packIm,
+                      outBuf
+                    )
+                    .map(_ => FftConvolution.adoptFull(outBuf, length))
+              }
         case ConvolutionMethod.OverlapAdd(block) =>
           kernelSpectrumArrays match
             case None =>
               Left(SignalError.NumericalFailure("ConvolutionPlan", "missing kernel spectrum"))
             case Some((kr, ki)) =>
-              OverlapAddConvolution
-                .fullWithKernelSpectrumArrays(
-                  signal,
-                  kr,
-                  ki,
-                  kernel.length,
-                  block,
-                  workRe,
-                  workIm,
-                  packRe,
-                  packIm,
-                  outBuf
-                )
-                .flatMap(full => FftConvolution.extractRegion(full, signal.length, kernel, region))
+              FftConvolution.regionBounds(signal.length, kernel, region).flatMap {
+                case (_, 0) => Right(DVec.zeros(0))
+                case (offset, length) =>
+                  OverlapAddConvolution
+                    .fullWithKernelSpectrumArraysIntoRegion(
+                      signal,
+                      kr,
+                      ki,
+                      kernel.length,
+                      block,
+                      signal.length + kernel.length - 1,
+                      offset,
+                      length,
+                      workRe,
+                      workIm,
+                      packRe,
+                      packIm,
+                      outBuf,
+                      accumulationBuf
+                    )
+                    .map(_ => FftConvolution.adoptFull(accumulationBuf, length))
+              }
         case ConvolutionMethod.Auto =>
           Left(SignalError.NumericalFailure("ConvolutionPlan", "Auto must be resolved at plan time"))
 
@@ -98,7 +113,10 @@ object PlannedConvolution:
         case ConvolutionMethod.Fft =>
           val outLen = inputLength + kernel.length - 1
           val nfft = FftConvolution.fftLength(outLen)
-          FftConvolution.transformKernelHalfArrays(kernel, nfft).map { half =>
+          for
+            bounds <- FftConvolution.regionBounds(inputLength, kernel, region)
+            half <- FftConvolution.transformKernelHalfArrays(kernel, nfft)
+          yield
             val packN =
               if signal4s.fft.internal.FastFftLength.isPowerOfTwo(nfft) then nfft / 2 else 0
             new PlannedConvolution(
@@ -111,12 +129,15 @@ object PlannedConvolution:
               new Array[Double](nfft),
               new Array[Double](packN),
               new Array[Double](packN),
-              new Array[Double](outLen)
+              new Array[Double](bounds._2),
+              Array.empty
             )
-          }
         case ConvolutionMethod.OverlapAdd(block) =>
           val nfft = FftConvolution.fftLength(block + kernel.length - 1)
-          FftConvolution.transformKernelHalfArrays(kernel, nfft).map { half =>
+          for
+            bounds <- FftConvolution.regionBounds(inputLength, kernel, region)
+            half <- FftConvolution.transformKernelHalfArrays(kernel, nfft)
+          yield
             val packN =
               if signal4s.fft.internal.FastFftLength.isPowerOfTwo(nfft) then nfft / 2 else 0
             new PlannedConvolution(
@@ -129,9 +150,9 @@ object PlannedConvolution:
               new Array[Double](nfft),
               new Array[Double](packN),
               new Array[Double](packN),
-              new Array[Double](nfft)
+              new Array[Double](nfft),
+              new Array[Double](bounds._2)
             )
-          }
         case ConvolutionMethod.Auto =>
           Left(SignalError.NumericalFailure("ConvolutionPlan", "internal: unresolved Auto"))
 
@@ -146,6 +167,7 @@ object PlannedConvolution:
       region,
       ConvolutionMethod.Direct,
       None,
+      Array.empty,
       Array.empty,
       Array.empty,
       Array.empty,

@@ -71,6 +71,33 @@ private[fft] object FftConvolution:
       packIm: Array[Double],
       outBuf: Array[Double]
   ): Either[SignalError, DVec] =
+    fullWithKernelSpectrumArraysIntoRaw(
+      signal,
+      kernelHalfRe,
+      kernelHalfIm,
+      outLen,
+      workRe,
+      workIm,
+      packRe,
+      packIm,
+      outBuf
+    ).map(_ => adopt(outBuf, outLen))
+
+  /** Writes the full convolution into `outBuf` without materializing a `DVec`.
+    *
+    * Plans use this form when they subsequently return only a requested region.
+    */
+  private[fft] def fullWithKernelSpectrumArraysIntoRaw(
+      signal: DVec,
+      kernelHalfRe: Array[Double],
+      kernelHalfIm: Array[Double],
+      outLen: Int,
+      workRe: Array[Double],
+      workIm: Array[Double],
+      packRe: Array[Double],
+      packIm: Array[Double],
+      outBuf: Array[Double]
+  ): Either[SignalError, Unit] =
     fullBlockWithKernelSpectrumArraysInto(
       signal,
       signalOffset = 0,
@@ -83,7 +110,37 @@ private[fft] object FftConvolution:
       packRe,
       packIm,
       outBuf
-    ).map(_ => adopt(outBuf, outLen))
+    )
+
+  /** Writes a requested full-convolution region directly into `outBuf`. */
+  private[fft] def fullWithKernelSpectrumArraysIntoRegion(
+      signal: DVec,
+      kernelHalfRe: Array[Double],
+      kernelHalfIm: Array[Double],
+      fullOutLen: Int,
+      regionOffset: Int,
+      regionLength: Int,
+      workRe: Array[Double],
+      workIm: Array[Double],
+      packRe: Array[Double],
+      packIm: Array[Double],
+      outBuf: Array[Double]
+  ): Either[SignalError, Unit] =
+    fullBlockWithKernelSpectrumArraysIntoRegion(
+      signal,
+      signalOffset = 0,
+      signalLength = signal.length,
+      kernelHalfRe,
+      kernelHalfIm,
+      fullOutLen,
+      regionOffset,
+      regionLength,
+      workRe,
+      workIm,
+      packRe,
+      packIm,
+      outBuf
+    )
 
   /** Transform one contiguous signal block into caller-owned output and FFT buffers. */
   private[fft] def fullBlockWithKernelSpectrumArraysInto(
@@ -99,6 +156,38 @@ private[fft] object FftConvolution:
       packIm: Array[Double],
       outBuf: Array[Double]
   ): Either[SignalError, Unit] =
+    fullBlockWithKernelSpectrumArraysIntoRegion(
+      signal,
+      signalOffset,
+      signalLength,
+      kernelHalfRe,
+      kernelHalfIm,
+      fullOutLen = outLen,
+      regionOffset = 0,
+      regionLength = outLen,
+      workRe,
+      workIm,
+      packRe,
+      packIm,
+      outBuf
+    )
+
+  /** Transform a signal block, retaining only a contiguous region of its full output. */
+  private[fft] def fullBlockWithKernelSpectrumArraysIntoRegion(
+      signal: DVec,
+      signalOffset: Int,
+      signalLength: Int,
+      kernelHalfRe: Array[Double],
+      kernelHalfIm: Array[Double],
+      fullOutLen: Int,
+      regionOffset: Int,
+      regionLength: Int,
+      workRe: Array[Double],
+      workIm: Array[Double],
+      packRe: Array[Double],
+      packIm: Array[Double],
+      outBuf: Array[Double]
+  ): Either[SignalError, Unit] =
     val bins = kernelHalfRe.length
     if kernelHalfIm.length != bins || bins < 2 then
       Left(SignalError.LengthMismatch(bins, kernelHalfIm.length))
@@ -106,10 +195,17 @@ private[fft] object FftConvolution:
       val nfft = (bins - 1) << 1
       if workRe.length != nfft || workIm.length != nfft then
         Left(SignalError.LengthMismatch(nfft, workRe.length))
-      else if outBuf.length < outLen then
-        Left(SignalError.LengthMismatch(outLen, outBuf.length))
-      else if outLen < 0 || outLen > nfft then
-        Left(SignalError.NumericalFailure("FftConvolution", s"outLen=$outLen nfft=$nfft"))
+      else if outBuf.length < regionLength then
+        Left(SignalError.LengthMismatch(regionLength, outBuf.length))
+      else if fullOutLen < 0 || fullOutLen > nfft then
+        Left(SignalError.NumericalFailure("FftConvolution", s"outLen=$fullOutLen nfft=$nfft"))
+      else if regionOffset < 0 || regionLength < 0 || regionOffset + regionLength > fullOutLen then
+        Left(
+          SignalError.NumericalFailure(
+            "FftConvolution",
+            s"invalid output region offset=$regionOffset length=$regionLength fullLength=$fullOutLen"
+          )
+        )
       else if signalOffset < 0 || signalLength < 0 || signalOffset + signalLength > signal.length then
         Left(
           SignalError.NumericalFailure(
@@ -135,9 +231,10 @@ private[fft] object FftConvolution:
             packRe,
             packIm,
             scale = 1.0 / nfft.toDouble,
-            outBuf,
-            outLen
+            workRe,
+            nfft
           )
+          copyRegion(workRe, regionOffset, regionLength, outBuf)
           Right(())
       else
         // 5-smooth (or other engine-supported) length: complex FFT of a real signal.
@@ -150,8 +247,8 @@ private[fft] object FftConvolution:
         FftEngine.inverse(workRe, workIm)
         val scale = 1.0 / nfft.toDouble
         var i = 0
-        while i < outLen do
-          outBuf(i) = workRe(i) * scale
+        while i < regionLength do
+          outBuf(i) = workRe(regionOffset + i) * scale
           i += 1
         Right(())
 
@@ -297,6 +394,55 @@ private[fft] object FftConvolution:
       i += 1
     builder.result()
 
+  private[fft] def adoptFull(values: Array[Double], length: Int): DVec =
+    adopt(values, length)
+
+  /** Full-array offset and length for a supported FFT convolution region. */
+  private[fft] def regionBounds(
+      signalLength: Int,
+      kernel: Kernel,
+      region: OutputRegion
+  ): Either[SignalError, (Int, Int)] =
+    region match
+      case OutputRegion.Full =>
+        Right((0, signalLength + kernel.length - 1))
+      case OutputRegion.Valid =>
+        val first = kernel.length - 1 - kernel.zeroLagIndex
+        val last = signalLength - 1 - kernel.zeroLagIndex
+        Right((first, math.max(0, last - first + 1)))
+      case OutputRegion.Input(Boundary.Zero) =>
+        Right((kernel.zeroLagIndex, signalLength))
+      case OutputRegion.Input(other) =>
+        Left(
+          SignalError.NumericalFailure(
+            "FftConvolution",
+            s"FFT convolution supports Full, Valid, and Input(Zero); got Input($other)"
+          )
+        )
+
+  /** Materialize just the requested region from a full convolution buffer. */
+  private[fft] def adoptRegion(
+      full: Array[Double],
+      signalLength: Int,
+      kernel: Kernel,
+      region: OutputRegion
+  ): Either[SignalError, DVec] =
+    val fullLength = signalLength + kernel.length - 1
+    if full.length < fullLength then Left(SignalError.LengthMismatch(fullLength, full.length))
+    else regionBounds(signalLength, kernel, region).map { case (offset, length) =>
+      adoptSegment(full, offset, length)
+    }
+
+  private def adoptSegment(values: Array[Double], offset: Int, length: Int): DVec =
+    if length == 0 then DVec.zeros(0)
+    else
+      val builder = DVecBuilder.zeros(length)
+      var i = 0
+      while i < length do
+        builder(i) = values(offset + i)
+        i += 1
+      builder.result()
+
   private def copyBlock(
       signal: DVec,
       offset: Int,
@@ -306,6 +452,17 @@ private[fft] object FftConvolution:
     var i = 0
     while i < length do
       target(i) = signal(offset + i)
+      i += 1
+
+  private def copyRegion(
+      source: Array[Double],
+      offset: Int,
+      length: Int,
+      target: Array[Double]
+  ): Unit =
+    var i = 0
+    while i < length do
+      target(i) = source(offset + i)
       i += 1
 
   private def take(x: DVec, n: Int): DVec =
