@@ -1,0 +1,40 @@
+{
+  "expected": {
+    "taps": [
+      7.391423150963729e-19,
+      0.009304283145018147,
+      0.04757776613441745,
+      0.12236354636114467,
+      0.20224655842984032,
+      0.23701569185915894,
+      0.20224655842984032,
+      0.12236354636114467,
+      0.04757776613441745,
+      0.009304283145018147,
+      7.391423150963729e-19
+    ]
+  },
+  "id": "smoke.firwin_lowpass_hamming_11",
+  "inputs": {},
+  "mapping": {
+    "signal4s": "FirDesign.lowPass(11, Frequency(100), SampleRate(1000), Hamming/Symmetric)"
+  },
+  "operation": "firwin",
+  "params": {
+    "cutoff_hz": 100.0,
+    "numtaps": 11,
+    "pass_zero": true,
+    "sample_rate_hz": 1000.0,
+    "window": "hamming"
+  },
+  "scipy_api": "scipy.signal.firwin",
+  "tolerance": {
+    "atol": 1e-12,
+    "rtol": 1e-10
+  },
+  "versions": {
+    "gsignal": null,
+    "numpy": "2.2.6",
+    "scipy": "1.15.3"
+  }
+}

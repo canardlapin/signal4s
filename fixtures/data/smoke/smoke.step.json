@@ -1,0 +1,54 @@
+{
+  "expected": {
+    "samples": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ]
+  },
+  "id": "smoke.step",
+  "inputs": {},
+  "operation": "signal.step",
+  "params": {
+    "length": 32
+  },
+  "scipy_api": "numpy (constructed)",
+  "tolerance": {
+    "atol": 0.0,
+    "rtol": 0.0
+  },
+  "versions": {
+    "gsignal": null,
+    "numpy": "2.2.6",
+    "scipy": "1.15.3"
+  }
+}

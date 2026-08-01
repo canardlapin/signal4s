@@ -1,0 +1,106 @@
+{
+  "expected": {
+    "samples": [
+      0.1,
+      0.4,
+      0.4,
+      0.1,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "id": "smoke.convolve_full_even_kernel_origin0",
+  "inputs": {
+    "kernel": [
+      0.1,
+      0.4,
+      0.4,
+      0.1
+    ],
+    "signal": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "mapping": {
+    "notes": "Even-length kernel; origin must be explicit in signal4s.",
+    "signal4s_kernel": {
+      "constructor": "at",
+      "zero_lag_index": 0
+    },
+    "signal4s_region": "Full"
+  },
+  "operation": "convolve.full",
+  "params": {
+    "mode": "full"
+  },
+  "scipy_api": "scipy.signal.convolve",
+  "tolerance": {
+    "atol": 1e-14,
+    "rtol": 1e-12
+  },
+  "versions": {
+    "gsignal": null,
+    "numpy": "2.2.6",
+    "scipy": "1.15.3"
+  }
+}

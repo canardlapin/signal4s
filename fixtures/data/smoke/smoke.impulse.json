@@ -1,0 +1,55 @@
+{
+  "expected": {
+    "samples": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "id": "smoke.impulse",
+  "inputs": {},
+  "notes": "Unit impulse at index 0; base stimulus for convolution/filter fixtures.",
+  "operation": "signal.impulse",
+  "params": {
+    "length": 32
+  },
+  "scipy_api": "numpy (constructed)",
+  "tolerance": {
+    "atol": 0.0,
+    "rtol": 0.0
+  },
+  "versions": {
+    "gsignal": null,
+    "numpy": "2.2.6",
+    "scipy": "1.15.3"
+  }
+}

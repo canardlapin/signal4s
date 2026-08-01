@@ -1,0 +1,46 @@
+{
+  "expected": {
+    "taps": [
+      0.0,
+      0.04322727117869962,
+      0.16543469682057088,
+      0.34549150281252633,
+      0.5522642316338268,
+      0.75,
+      0.9045084971874737,
+      0.9890738003669028,
+      0.9890738003669028,
+      0.9045084971874737,
+      0.7500000000000002,
+      0.5522642316338271,
+      0.34549150281252633,
+      0.16543469682057105,
+      0.04322727117869968,
+      0.0
+    ]
+  },
+  "id": "smoke.window_hann_symmetric_16",
+  "inputs": {},
+  "mapping": {
+    "fftbins_false": "Symmetric",
+    "fftbins_true": "Periodic",
+    "signal4s": "WindowSpec.Hann(n, WindowConvention.Symmetric)"
+  },
+  "operation": "window",
+  "params": {
+    "convention": "Symmetric",
+    "fftbins": false,
+    "length": 16,
+    "name": "hann"
+  },
+  "scipy_api": "scipy.signal.get_window",
+  "tolerance": {
+    "atol": 1e-14,
+    "rtol": 1e-12
+  },
+  "versions": {
+    "gsignal": null,
+    "numpy": "2.2.6",
+    "scipy": "1.15.3"
+  }
+}

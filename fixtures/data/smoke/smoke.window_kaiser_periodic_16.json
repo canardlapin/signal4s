@@ -1,0 +1,45 @@
+{
+  "expected": {
+    "taps": [
+      0.036710892271286676,
+      0.11369652128992505,
+      0.23054433409868888,
+      0.38167722564683354,
+      0.5528517696991324,
+      0.7230035981845221,
+      0.868017159478478,
+      0.9655887722316073,
+      1.0,
+      0.9655887722316073,
+      0.868017159478478,
+      0.7230035981845221,
+      0.5528517696991324,
+      0.38167722564683354,
+      0.23054433409868888,
+      0.11369652128992505
+    ]
+  },
+  "id": "smoke.window_kaiser_periodic_16",
+  "inputs": {},
+  "mapping": {
+    "notes": "I0 via Abramowitz polynomial; looser tol than cosine windows.",
+    "signal4s": "WindowSpec.Kaiser(16, 5.0, Periodic)"
+  },
+  "operation": "window",
+  "params": {
+    "beta": 5.0,
+    "convention": "Periodic",
+    "length": 16,
+    "sym": false
+  },
+  "scipy_api": "scipy.signal.windows.kaiser",
+  "tolerance": {
+    "atol": 1e-09,
+    "rtol": 1e-07
+  },
+  "versions": {
+    "gsignal": null,
+    "numpy": "2.2.6",
+    "scipy": "1.15.3"
+  }
+}

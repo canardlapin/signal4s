@@ -1,0 +1,11 @@
+.mote/
+target/
+.bsp/
+.metals/
+.bloop/
+.venv/
+fixtures/generate/.venv/
+__pycache__/
+*.class
+.idea/
+.DS_Store

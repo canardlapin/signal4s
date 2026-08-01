@@ -1,0 +1,50 @@
+name: Verify
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  coverage:
+    name: JVM coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: sbt
+      - run: sbt -batch coverageCoreFft
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: scoverage-report
+          path: target/scala-3.7.4/scoverage-report
+
+  macos-jvm:
+    name: macOS native backend parity
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: sbt
+      - run: sbt -batch "coreJVM/test" "fftJVM/test" "lawsJVM/test"
+
+  scala-js:
+    name: Scala.js parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: sbt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: sbt -batch "coreJS/test" "fftJS/test"

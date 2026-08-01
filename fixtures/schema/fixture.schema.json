@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/canardlapin/signal4s/fixtures/schema/fixture.schema.json",
+  "title": "signal4s numeric fixture",
+  "type": "object",
+  "required": [
+    "id",
+    "operation",
+    "versions",
+    "params",
+    "inputs",
+    "expected",
+    "tolerance"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Stable fixture id referenced by Scala tests and the coverage catalog."
+    },
+    "operation": {
+      "type": "string",
+      "description": "Logical operation name, e.g. convolve.full, fft.forward, sosfilt."
+    },
+    "scipy_api": {
+      "type": "string",
+      "description": "Fully qualified SciPy/NumPy callable used to generate expected values."
+    },
+    "versions": {
+      "type": "object",
+      "required": ["scipy", "numpy"],
+      "properties": {
+        "scipy": { "type": "string" },
+        "numpy": { "type": "string" },
+        "gsignal": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "params": {
+      "type": "object",
+      "description": "Scalar parameters and enums for the operation."
+    },
+    "inputs": {
+      "type": "object",
+      "description": "Named input arrays (JSON number arrays) and scalars.",
+      "additionalProperties": true
+    },
+    "expected": {
+      "type": "object",
+      "description": "Named expected output arrays/scalars.",
+      "additionalProperties": true
+    },
+    "tolerance": {
+      "type": "object",
+      "required": ["rtol", "atol"],
+      "properties": {
+        "rtol": { "type": "number" },
+        "atol": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "mapping": {
+      "type": "object",
+      "description": "Documents how SciPy parameters map onto signal4s types when the APIs are not isomorphic.",
+      "additionalProperties": true
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

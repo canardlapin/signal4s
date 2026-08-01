@@ -1,0 +1,298 @@
+{
+  "beads": [
+    {
+      "id": "epic-s4s",
+      "title": "signal4s 1.0 — compact calculus of sampled signals",
+      "priority": 0,
+      "tags": ["epic", "signal4s", "umbrella"],
+      "body": "Umbrella epic for signal4s before 1.0.\n\nSpine: Signal + Kernel + System Representation + Plan + Runner + Typed Result Axes.\n\nNot a SciPy/gsignal port. SciPy is evidence via versioned fixtures; API contracts come from proposal.md.\n\n## Exit criteria (1.0)\n- All child epics E0–E10 closed\n- Required scope in proposal.md §6 implemented\n- Law suite green on JVM + Scala.js for core/fft/design/laws\n- SciPy fixture parity suite green for every required numerical path\n- Explicit supported/unsupported matrix published\n\n## Source\nproposal.md (2026-07-31)"
+    },
+
+    {
+      "id": "epic-e0-fixtures",
+      "title": "E0: SciPy / gsignal versioned fixture harness",
+      "priority": 0,
+      "tags": ["epic", "scipy", "fixtures", "qa"],
+      "relations": ["epic-s4s"],
+      "body": "Offline fixture generator + committed golden vectors. No Python/R at test runtime.\n\n## Goal\nProduce versioned JSON/NPY-style fixtures from pinned SciPy (and optionally gsignal) that Scala tests load as evidence.\n\n## Acceptance criteria\n- [ ] `fixtures/` layout documented (schema, SciPy version, gsignal version if used, generation command)\n- [ ] Generator script pinned to exact SciPy version; output is deterministic\n- [ ] Fixtures committed; CI/tests do not invoke Python\n- [ ] Each fixture records: operation name, inputs, parameters, expected outputs, rtol/atol, SciPy API used\n- [ ] Coverage catalog maps each required 1.0 numerical path → fixture ids\n- [ ] Impulse, step, on-bin / between-bin sinusoids, even/odd kernels, short signals included as base set\n\n## SciPy checks (this epic *is* the harness)\n- Pin and record `scipy.__version__` (and numpy) in fixture metadata\n- Prefer stable SciPy APIs: `convolve`, `correlate`, `lfilter`, `sosfilt`, `filtfilt`, `firwin`, `butter`, `sosfreqz`, `stft`/`ShortTimeFFT`, `welch`, `resample_poly` / `upfirdn`, `fft`/`rfft`\n- Document known semantic mismatches (e.g. mode=same vs Kernel origin) so fixtures test *numeric* agreement under an explicit mapping, not blind API cloning"
+    },
+
+    {
+      "id": "epic-e1-foundation",
+      "title": "E1: Foundation — build, axes, Signal, Kernel, errors",
+      "priority": 0,
+      "tags": ["epic", "core", "foundation"],
+      "relations": ["epic-s4s"],
+      "body": "Cross-project build + core ontology. No convolution yet.\n\n## Goal\nsignal4s-core and signal4s-laws exist; SampleRate/Frequency/Sampling/Signal/Kernel/SignalError are precise and tested.\n\n## Acceptance criteria\n- [ ] sbt multi-project: core + laws; JVM + Scala.js cross for both\n- [ ] Gale is a real dependency of core\n- [ ] Smart constructors return Either[SignalError, _]; `.orThrow` for tests/examples\n- [ ] SampleRate / Frequency reject non-positive / non-finite values\n- [ ] Frequency↔rad/sample and cycles/sample require explicit SampleRate\n- [ ] Kernel.causal / Kernel.at / Kernel.centeredOdd; even-length silent centering impossible\n- [ ] Kernel.minLag/maxLag agree with origin + tap count (law)\n- [ ] Signal carries Sampling; length from samples\n- [ ] Executable doc skeleton (mdoc or equivalent placeholder)\n- [ ] proposal.md linked from README stub\n\n## SciPy checks\n- None required for numeric parity yet\n- Document mapping notes: SciPy arrays are bare; Signal/Kernel axes are the intentional delta"
+    },
+
+    {
+      "id": "epic-e2-direct-conv",
+      "title": "E2: Direct convolution, boundaries, correlation, axes",
+      "priority": 0,
+      "tags": ["epic", "core", "convolution"],
+      "relations": ["epic-s4s"],
+      "deps": ["epic-e1-foundation", "epic-e0-fixtures"],
+      "body": "Semantically exact convolution regions + scalar reference implementation.\n\n## Goal\nDirect convolution and correlation with explicit Boundary, OutputRegion, Kernel origin, and lag/time axes.\n\n## Acceptance criteria\n- [ ] Scalar reference direct convolution (visible, used as oracle for later optimized paths)\n- [ ] OutputRegion: Full, Valid, Input(boundary)\n- [ ] Boundary: Zero, Reflect at minimum; Constant/Clamp/Symmetric as designed\n- [ ] Signal-axis propagation: t_out = t_in - zeroLagIndex/fs\n- [ ] Correlation returns values + LagAxis; documented r_xy[ℓ]=∑ x[n] y[n+ℓ]\n- [ ] Normalization enum (raw/biased/unbiased/coefficient), not Boolean\n- [ ] Laws: delta identity, linearity, full commutativity (tol), length/axis laws\n- [ ] Exhaustive small-vector tests\n- [ ] Circular convolution is a *separate* API (not a Boundary case)\n\n## SciPy checks\n- [ ] Full zero-extension vs `scipy.signal.convolve(..., mode='full')` with causal kernels\n- [ ] Valid vs `mode='valid'`\n- [ ] Input(Zero) vs SciPy `mode='same'` under an *explicit* origin mapping fixture (document mapping)\n- [ ] Correlation vs `scipy.signal.correlate` for same convention mapping + lag axis fixture\n- [ ] Autocorrelation of impulse/sinusoid fixtures\n- [ ] Even/odd kernels and nonzero origins covered by fixtures"
+    },
+
+    {
+      "id": "epic-e3-conv-operator",
+      "title": "E3: Gale ConvolutionOperator with adjoint",
+      "priority": 1,
+      "tags": ["epic", "core", "gale", "operator"],
+      "relations": ["epic-s4s"],
+      "deps": ["epic-e2-direct-conv"],
+      "body": "Finite batch convolution as DoubleLinearOperator. No FFT yet.\n\n## Goal\nZero-boundary convolution operator with proven adjoint for inverse/LS/matched-filter path.\n\n## Acceptance criteria\n- [ ] Convolution.operator(kernel, inputLength, region) for zero-extension regions\n- [ ] Forward matches direct convolution reference\n- [ ] Adjoint property ⟨Ax,y⟩ ≈ ⟨x,A*y⟩ with scale-aware tolerance (law)\n- [ ] Reflective/clamped adjoints not advertised until implemented+tested\n- [ ] Direct-kernel benchmarks (allocation + throughput) recorded\n- [ ] Streaming runners do NOT extend DoubleLinearOperator (doc + API review)\n\n## SciPy checks\n- [ ] Forward operator output matches SciPy convolve fixtures (same as E2)\n- [ ] Adjoint checked against explicit matrix form on small N (SciPy or dense Gale), not against a SciPy adjoint API\n- [ ] Fixture: small Toeplitz / convolution matrix vs operator matvec"
+    },
+
+    {
+      "id": "epic-e4-fir-sos",
+      "title": "E4: FIR + SOS runners, state, zero-phase",
+      "priority": 0,
+      "tags": ["epic", "core", "filter"],
+      "relations": ["epic-s4s"],
+      "deps": ["epic-e2-direct-conv"],
+      "body": "Immutable filter descriptions; single-owner runners; DF-II transposed SOS.\n\n## Goal\nFIR and SecondOrderCascade execution with explicit state, batch/chunk laws, and separate zero-phase path.\n\n## Acceptance criteria\n- [ ] Fir(kernel); runner process / processInto / reset / snapshot\n- [ ] FIR from-rest batch ≡ convolution (law)\n- [ ] Biquad named coeffs with a0=1; SecondOrderCascade\n- [ ] DF-II transposed implementation\n- [ ] Chunking law: run(x++y,s0) ≈ run(y,s_x)\n- [ ] Snapshot/restart law; two runners from one description have independent state\n- [ ] DigitalTransferFunction filtering for low-order/interop\n- [ ] ZeroPhase.filter as separate offline API (not runner flag); edge policy explicit\n- [ ] High-order numerical stress fixtures\n- [ ] Document: not thread-safe; latency; state shape; flush if any\n\n## SciPy checks\n- [ ] FIR runner vs `lfilter` / convolve mapping for causal FIR\n- [ ] SOS vs `scipy.signal.sosfilt` on shared SOS coefficient fixtures\n- [ ] Initial/final conditions vs SciPy zi/zf mapping fixtures\n- [ ] Zero-phase vs `filtfilt` with documented padtype/edge mapping (Gustafsson etc.)\n- [ ] Poles near unit circle stress cases from SciPy-generated SOS"
+    },
+
+    {
+      "id": "epic-e5-fft",
+      "title": "E5: FFT substrate — ComplexVector, plans, workspaces",
+      "priority": 0,
+      "tags": ["epic", "fft"],
+      "relations": ["epic-s4s"],
+      "deps": ["epic-e1-foundation", "epic-e0-fixtures"],
+      "body": "Portable pure-Scala FFT with explicit normalization and split-complex storage.\n\n## Goal\nImmutable RealFftPlan / complex plans + single-owner workspaces; JVM and Scala.js parity.\n\n## Acceptance criteria\n- [ ] Complex + ComplexVector(real,imag) split storage\n- [ ] FftNormalization: Backward / Forward / Orthonormal\n- [ ] Mixed-radix + Bluestein for arbitrary lengths\n- [ ] Real↔half-complex transforms\n- [ ] Plan immutable/thread-safe; workspace owns scratch (not cached in plan)\n- [ ] forwardInto / inverseInto destination APIs\n- [ ] Laws: round-trip; Parseval per normalization; real conjugate symmetry\n- [ ] Spectra carry FrequencyAxis + sourceLength + normalization\n- [ ] JVM + Scala.js benchmarks for common lengths\n\n## SciPy checks\n- [ ] fft/ifft vs `numpy.fft` / `scipy.fft` under each normalization mapping\n- [ ] rfft/irfft half-complex layout fixtures (document packing vs SciPy)\n- [ ] Non-power-of-two lengths including primes (Bluestein path)\n- [ ] On-bin and between-bin sinusoid amplitude/phase fixtures"
+    },
+
+    {
+      "id": "epic-e6-planned-conv",
+      "title": "E6: Planned FFT / overlap-add convolution + Auto",
+      "priority": 0,
+      "tags": ["epic", "fft", "convolution"],
+      "relations": ["epic-s4s"],
+      "deps": ["epic-e2-direct-conv", "epic-e5-fft"],
+      "body": "Meaning vs method: plans select algorithm; results match direct reference.\n\n## Goal\nFFT convolution, overlap-add, reusable ConvolutionPlan, measured Auto dispatch.\n\n## Acceptance criteria\n- [ ] ConvolutionPlan exposes selected algorithm; reuses transformed kernel\n- [ ] Direct ≡ FFT ≡ OLA within scale-aware tolerance (law)\n- [ ] Circular convolution theorem law vs FFT path\n- [ ] Auto dispatch driven by measured models (no folklore 256-tap rule)\n- [ ] Benchmark matrix: lengths, one-shot vs reused kernel, regions, cold vs warm\n- [ ] Ownership: immutable results stable after workspace reuse\n\n## SciPy checks\n- [ ] FFT/OLA outputs match SciPy convolve fixtures (same cases as E2)\n- [ ] Circular conv vs `scipy.fft` product of DFTs / `convolve(..., method=)` where applicable\n- [ ] Large length stress fixtures vs SciPy"
+    },
+
+    {
+      "id": "epic-e7-spectral",
+      "title": "E7: Windows, framing, STFT, periodogram, Welch",
+      "priority": 0,
+      "tags": ["epic", "fft", "spectral"],
+      "relations": ["epic-s4s"],
+      "deps": ["epic-e5-fft"],
+      "body": "Windows with convention; shared FramePlan; StftPlan with dual; typed spectra.\n\n## Goal\nSTFT analyze/synthesize + Welch/periodogram without reimplementing framing/FFT/scaling ad hoc.\n\n## Acceptance criteria\n- [ ] WindowSpec + WindowConvention (Symmetric|Periodic) always required\n- [ ] Window carries coherent gain, power gain, ENBW\n- [ ] FramePlan reused by STFT/Welch\n- [ ] StftPlan validates invertibility; CanonicalDual computed once\n- [ ] TimeFrequency named axes; spectrogram derived from STFT\n- [ ] Periodogram + WelchPlan (detrend/sides/scaling/average enums)\n- [ ] WelchResult retains diagnostics; DoF not fabricated naively\n- [ ] Laws: STFT round-trip for valid dual; axes match plan\n\n## SciPy checks\n- [ ] Periodic/symmetric Hann/Hamming/Blackman/Kaiser vs SciPy windows\n- [ ] STFT vs `ShortTimeFFT` / `stft` under documented hop/window/fft mapping\n- [ ] Exact inverse STFT round-trip fixtures (edge frames included)\n- [ ] Welch/periodogram vs `scipy.signal.welch` / `periodogram` for scaling='spectrum'|'density', onesided\n- [ ] Detrend mean/linear fixtures"
+    },
+
+    {
+      "id": "epic-e8-design",
+      "title": "E8: FIR design + Butterworth IIR → SOS",
+      "priority": 1,
+      "tags": ["epic", "design"],
+      "relations": ["epic-s4s"],
+      "deps": ["epic-e4-fir-sos", "epic-e0-fixtures"],
+      "body": "Specification-driven design with physical frequency types and design reports.\n\n## Goal\nWindowed-sinc FIR + Butterworth analog→bilinear→ZPK→SOS with diagnostics.\n\n## Acceptance criteria\n- [ ] No bare cutoff Double; Frequency + SampleRate required\n- [ ] Reject frequencies above Nyquist\n- [ ] FirDesign low/high/band + Kaiser order estimation\n- [ ] Butterworth lowPass (and family transforms as scoped)\n- [ ] Named conversions: Bilinear.transform, Sos.fromZerosPolesGain, …\n- [ ] DesignedIir(zpk, sos, report); SOS primary for execution\n- [ ] IirDesignReport: orders, freqs, pole magnitude, stable, warnings\n- [ ] Laws: ZPK/SOS/TF responses agree after conversion; freq/impulse/step response; group delay\n\n## SciPy checks\n- [ ] firwin / firwin2 style fixtures under explicit window + fs mapping\n- [ ] butter + tf2sos / zpk2sos fixtures (pairing differences documented if any)\n- [ ] freqz/sosfreqz magnitude & phase fixtures\n- [ ] impulse/step response fixtures\n- [ ] High-order TF vs SOS conditioning warning cases"
+    },
+
+    {
+      "id": "epic-e9-multirate",
+      "title": "E9: Polyphase upfirdn + rational resampling",
+      "priority": 1,
+      "tags": ["epic", "multirate"],
+      "relations": ["epic-s4s"],
+      "deps": ["epic-e4-fir-sos", "epic-e0-fixtures"],
+      "body": "One substrate for rate change; streaming contract separate from simple filter runners.\n\n## Goal\nRateRatio + polyphase resampler; decimate/resample compile to upfirdn.\n\n## Acceptance criteria\n- [ ] RateRatio always GCD-reduced, positive\n- [ ] Polyphase decomposition of prototype FIR\n- [ ] upfirdn + rational resampler expose rates, phase, delay, consume/produce, flush\n- [ ] Laws: ratio reduction preserves meaning; identity ratio ≡ identity ± documented delay\n- [ ] Chunk/latency laws for streaming resampler\n- [ ] Conveniences do not fork independent numeric cores\n\n## SciPy checks\n- [ ] upfirdn vs `scipy.signal.upfirdn`\n- [ ] resample_poly vs SciPy for several up/down pairs and phases\n- [ ] Identity ratio and pure decimate/interpolate fixtures\n- [ ] Edge/flush behavior documented relative to SciPy"
+    },
+
+    {
+      "id": "epic-e10-ravel-audit",
+      "title": "E10: Ravel adapters + 1.0 API/numerical audit",
+      "priority": 2,
+      "tags": ["epic", "ravel", "release"],
+      "relations": ["epic-s4s"],
+      "deps": ["epic-e6-planned-conv", "epic-e7-spectral", "epic-e8-design", "epic-e9-multirate", "epic-e3-conv-operator"],
+      "body": "Optional N-D integration and release gate.\n\n## Goal\nsignal4s-ravel for axis-wise ops; complete audit before 1.0.\n\n## Acceptance criteria\n- [ ] Transform-along-axis and batched channel helpers (optional module)\n- [ ] Contiguous copies controlled/explicit\n- [ ] Core 1-D types do not depend on Ravel\n- [ ] Full API audit vs proposal required/deferred lists\n- [ ] Benchmark receipts attached for Auto dispatch + FFT + SOS\n- [ ] Migration examples from SciPy and gsignal (docs)\n- [ ] Supported/unsupported matrix published\n- [ ] All SciPy fixture catalog entries green on JVM; Scala.js where applicable\n\n## SciPy checks\n- [ ] End-to-end workflow fixture: generate → filter → STFT → Welch matches SciPy pipeline under mapping doc\n- [ ] Fixture catalog coverage = 100% of required §6 numerical features\n- [ ] Explicit list of intentional semantic differences (Kernel origin, OutputRegion.Input, typed frequencies)"
+    },
+
+    {
+      "id": "task-e0-generator",
+      "title": "Fixture generator script + schema + pinned SciPy version",
+      "priority": 0,
+      "tags": ["task", "scipy", "fixtures"],
+      "relations": ["epic-e0-fixtures"],
+      "body": "## Acceptance criteria\n- [ ] Script under `fixtures/generate/` (or similar) with locked SciPy/numpy versions\n- [ ] JSON schema for fixture files (operation, params, arrays as lists or sidecar, rtol/atol, versions)\n- [ ] README: how to regenerate; CI must not run generator by default\n- [ ] Smoke-generate base impulse/step/sine set and commit outputs"
+    },
+    {
+      "id": "task-e0-catalog",
+      "title": "Fixture coverage catalog mapped to 1.0 required features",
+      "priority": 1,
+      "tags": ["task", "scipy", "fixtures"],
+      "relations": ["epic-e0-fixtures"],
+      "deps": ["task-e0-generator"],
+      "body": "## Acceptance criteria\n- [ ] Catalog table: feature → fixture ids → SciPy API → owning epic\n- [ ] Gaps filed as open tasks under the owning epic\n- [ ] Catalog checked in review of E10"
+    },
+
+    {
+      "id": "task-e1-axes",
+      "title": "SampleRate, Frequency, Sampling, Signal, Kernel smart constructors",
+      "priority": 0,
+      "tags": ["task", "core"],
+      "relations": ["epic-e1-foundation"],
+      "body": "## Acceptance criteria\n- [ ] Either-based constructors; sealed SignalError cases for invalid rate/freq/origin/empty kernel\n- [ ] Kernel laws for lag range\n- [ ] No silent even-length centering\n- [ ] Unit tests on JVM + JS"
+    },
+    {
+      "id": "task-e1-build",
+      "title": "sbt cross-project skeleton: core, laws, Gale dependency",
+      "priority": 0,
+      "tags": ["task", "build"],
+      "relations": ["epic-e1-foundation"],
+      "body": "## Acceptance criteria\n- [ ] `modules/core`, `modules/laws` compile JVM + JS\n- [ ] Gale linked from core\n- [ ] README + proposal pointer\n- [ ] Empty law suite module publishes reusable package structure"
+    },
+
+    {
+      "id": "task-e2-reference-conv",
+      "title": "Scalar reference convolution + region/boundary matrix",
+      "priority": 0,
+      "tags": ["task", "convolution"],
+      "relations": ["epic-e2-direct-conv"],
+      "deps": ["epic-e1-foundation", "epic-e0-fixtures"],
+      "body": "## Acceptance criteria\n- [ ] Reference implementation clearly marked for tests\n- [ ] Full/Valid/Input × Zero/Reflect covered\n- [ ] Axis propagation tests for nonzero kernel origin\n- [ ] Circular conv separate entry point"
+    },
+    {
+      "id": "task-e2-scipy-conv",
+      "title": "SciPy parity fixtures: convolve + correlate + lags",
+      "priority": 0,
+      "tags": ["task", "scipy", "convolution"],
+      "relations": ["epic-e2-direct-conv"],
+      "deps": ["task-e0-generator", "task-e2-reference-conv"],
+      "body": "## Acceptance criteria\n- [ ] Fixtures for mode full/valid and mapped same→Input(Zero)\n- [ ] Correlation convention + LagAxis asserted in Scala tests\n- [ ] Even/odd/nonzero-origin kernels\n- [ ] rtol/atol recorded per fixture; failures name fixture id"
+    },
+
+    {
+      "id": "task-e3-adjoint",
+      "title": "Zero-boundary ConvolutionOperator + adjoint law tests",
+      "priority": 1,
+      "tags": ["task", "gale", "operator"],
+      "relations": ["epic-e3-conv-operator"],
+      "deps": ["epic-e2-direct-conv"],
+      "body": "## Acceptance criteria\n- [ ] operator forward ≡ reference conv\n- [ ] Adjoint law randomized + pathological lengths\n- [ ] Small dense-matrix agreement fixture\n- [ ] API docs state Reflect/Clamp adjoint unsupported"
+    },
+
+    {
+      "id": "task-e4-sos-runner",
+      "title": "Biquad + SOS DF-IIt runner with chunk/snapshot laws",
+      "priority": 0,
+      "tags": ["task", "filter"],
+      "relations": ["epic-e4-fir-sos"],
+      "deps": ["epic-e2-direct-conv"],
+      "body": "## Acceptance criteria\n- [ ] Named Biquad coeffs; cascade process/processInto\n- [ ] Chunk concatenation law; snapshot/restart law\n- [ ] Independent runner state from one description"
+    },
+    {
+      "id": "task-e4-scipy-filt",
+      "title": "SciPy parity: lfilter, sosfilt, filtfilt, zi/zf",
+      "priority": 0,
+      "tags": ["task", "scipy", "filter"],
+      "relations": ["epic-e4-fir-sos"],
+      "deps": ["task-e0-generator", "task-e4-sos-runner"],
+      "body": "## Acceptance criteria\n- [ ] Causal FIR/TF vs lfilter fixtures\n- [ ] SOS vs sosfilt fixtures including near-unit-circle poles\n- [ ] Zero-phase vs filtfilt with documented edge mapping\n- [ ] zi/zf round-trip fixtures"
+    },
+
+    {
+      "id": "task-e5-fft-core",
+      "title": "Mixed-radix + Bluestein FFT/RFFT plans and workspaces",
+      "priority": 0,
+      "tags": ["task", "fft"],
+      "relations": ["epic-e5-fft"],
+      "deps": ["epic-e1-foundation", "epic-e0-fixtures"],
+      "body": "## Acceptance criteria\n- [ ] All three normalizations\n- [ ] Arbitrary length via Bluestein\n- [ ] Workspace reuse ownership tests\n- [ ] JVM/JS round-trip laws"
+    },
+    {
+      "id": "task-e5-scipy-fft",
+      "title": "SciPy/NumPy parity fixtures for fft, ifft, rfft, irfft",
+      "priority": 0,
+      "tags": ["task", "scipy", "fft"],
+      "relations": ["epic-e5-fft"],
+      "deps": ["task-e0-generator", "task-e5-fft-core"],
+      "body": "## Acceptance criteria\n- [ ] Fixtures for each normalization mapping\n- [ ] Power-of-two, mixed-radix, and prime lengths\n- [ ] Half-complex packing documented vs SciPy\n- [ ] Sinusoid on-bin / between-bin cases"
+    },
+
+    {
+      "id": "task-e6-method-parity",
+      "title": "Direct ≡ FFT ≡ OLA laws + measured Auto dispatch harness",
+      "priority": 0,
+      "tags": ["task", "convolution", "bench"],
+      "relations": ["epic-e6-planned-conv"],
+      "deps": ["epic-e2-direct-conv", "epic-e5-fft"],
+      "body": "## Acceptance criteria\n- [ ] Cross-method equivalence laws\n- [ ] Plan reuses transformed kernel\n- [ ] Benchmark receipts checked in or published under benchmarks/\n- [ ] Auto never hard-codes a single universal threshold"
+    },
+
+    {
+      "id": "task-e7-stft",
+      "title": "StftPlan analyze/synthesize + CanonicalDual validation",
+      "priority": 0,
+      "tags": ["task", "spectral"],
+      "relations": ["epic-e7-spectral"],
+      "deps": ["epic-e5-fft"],
+      "body": "## Acceptance criteria\n- [ ] Invertibility validated at plan construction\n- [ ] Round-trip law for valid dual\n- [ ] Frame/bin axes match plan\n- [ ] Edge-frame fixtures"
+    },
+    {
+      "id": "task-e7-scipy-spectral",
+      "title": "SciPy parity: windows, STFT, welch, periodogram",
+      "priority": 0,
+      "tags": ["task", "scipy", "spectral"],
+      "relations": ["epic-e7-spectral"],
+      "deps": ["task-e0-generator", "task-e7-stft"],
+      "body": "## Acceptance criteria\n- [ ] Window convention fixtures (periodic vs symmetric)\n- [ ] ShortTimeFFT/stft mapping fixtures\n- [ ] welch/periodogram scaling and onesided fixtures\n- [ ] Intentional API differences documented beside fixtures"
+    },
+
+    {
+      "id": "task-e8-butter",
+      "title": "Butterworth → bilinear → ZPK → SOS + design report",
+      "priority": 1,
+      "tags": ["task", "design"],
+      "relations": ["epic-e8-design"],
+      "deps": ["epic-e4-fir-sos", "epic-e0-fixtures"],
+      "body": "## Acceptance criteria\n- [ ] Physical Frequency args; Nyquist rejection\n- [ ] DesignedIir with report fields populated\n- [ ] Response conversion laws ZPK/SOS/TF"
+    },
+    {
+      "id": "task-e8-scipy-design",
+      "title": "SciPy parity: firwin, butter, freqz, sosfreqz, impulse",
+      "priority": 1,
+      "tags": ["task", "scipy", "design"],
+      "relations": ["epic-e8-design"],
+      "deps": ["task-e0-generator", "task-e8-butter"],
+      "body": "## Acceptance criteria\n- [ ] FIR windowed-sinc fixtures vs firwin under mapping\n- [ ] butter+zpk2sos/tf2sos fixtures; pairing diffs documented\n- [ ] freqz/sosfreqz and impulse/step fixtures"
+    },
+
+    {
+      "id": "task-e9-upfirdn",
+      "title": "Polyphase upfirdn + RateRatio + streaming delay laws",
+      "priority": 1,
+      "tags": ["task", "multirate"],
+      "relations": ["epic-e9-multirate"],
+      "deps": ["epic-e4-fir-sos", "epic-e0-fixtures"],
+      "body": "## Acceptance criteria\n- [ ] GCD reduction\n- [ ] Identity ratio law ± delay\n- [ ] Consume/produce/flush documented and tested"
+    },
+    {
+      "id": "task-e9-scipy-resample",
+      "title": "SciPy parity: upfirdn + resample_poly phases",
+      "priority": 1,
+      "tags": ["task", "scipy", "multirate"],
+      "relations": ["epic-e9-multirate"],
+      "deps": ["task-e0-generator", "task-e9-upfirdn"],
+      "body": "## Acceptance criteria\n- [ ] Multiple up/down pairs and phases\n- [ ] Edge/flush differences vs SciPy documented\n- [ ] Pure decimate and interpolate fixtures"
+    },
+
+    {
+      "id": "task-e10-audit",
+      "title": "1.0 audit: support matrix, migration examples, fixture catalog 100%",
+      "priority": 2,
+      "tags": ["task", "release"],
+      "relations": ["epic-e10-ravel-audit"],
+      "deps": ["epic-e6-planned-conv", "epic-e7-spectral", "epic-e8-design", "epic-e9-multirate", "epic-e3-conv-operator"],
+      "body": "## Acceptance criteria\n- [ ] Required vs deferred matrix matches proposal.md §6\n- [ ] SciPy/gsignal migration examples compile or are mdoc-checked\n- [ ] Fixture catalog coverage complete for required numerical features\n- [ ] Benchmark receipts present for Auto/FFT/SOS\n- [ ] Intentional semantic differences listed for users"
+    }
+  ]
+}

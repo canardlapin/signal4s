@@ -1,0 +1,46 @@
+{
+  "expected": {
+    "taps": [
+      0.08000000000000007,
+      0.11976908948440373,
+      0.23219992107492526,
+      0.3978521825875243,
+      0.5880830931031207,
+      0.77,
+      0.9121478174124759,
+      0.9899478963375505,
+      0.9899478963375505,
+      0.9121478174124759,
+      0.7700000000000002,
+      0.5880830931031209,
+      0.3978521825875243,
+      0.23219992107492543,
+      0.11976908948440379,
+      0.08000000000000007
+    ]
+  },
+  "id": "smoke.window_hamming_symmetric_16",
+  "inputs": {},
+  "mapping": {
+    "fftbins_false": "Symmetric",
+    "fftbins_true": "Periodic",
+    "signal4s": "WindowSpec.Hamming(n, WindowConvention.Symmetric)"
+  },
+  "operation": "window",
+  "params": {
+    "convention": "Symmetric",
+    "fftbins": false,
+    "length": 16,
+    "name": "hamming"
+  },
+  "scipy_api": "scipy.signal.get_window",
+  "tolerance": {
+    "atol": 1e-14,
+    "rtol": 1e-12
+  },
+  "versions": {
+    "gsignal": null,
+    "numpy": "2.2.6",
+    "scipy": "1.15.3"
+  }
+}

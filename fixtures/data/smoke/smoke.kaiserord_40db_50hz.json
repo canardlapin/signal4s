@@ -1,0 +1,27 @@
+{
+  "expected": {
+    "beta": 3.3953210522614574,
+    "numtaps": 46
+  },
+  "id": "smoke.kaiserord_40db_50hz",
+  "inputs": {},
+  "mapping": {
+    "signal4s": "FirDesign.kaiserOrder(40, 50, SampleRate(1000))"
+  },
+  "operation": "kaiserord",
+  "params": {
+    "ripple_db": 40.0,
+    "sample_rate_hz": 1000.0,
+    "width_hz": 50.0
+  },
+  "scipy_api": "scipy.signal.kaiserord",
+  "tolerance": {
+    "atol": 1e-12,
+    "rtol": 0.0
+  },
+  "versions": {
+    "gsignal": null,
+    "numpy": "2.2.6",
+    "scipy": "1.15.3"
+  }
+}

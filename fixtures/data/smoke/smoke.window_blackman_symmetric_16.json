@@ -1,0 +1,46 @@
+{
+  "expected": {
+    "taps": [
+      -1.3877787807814457e-17,
+      0.016757719687408232,
+      0.0770724197591586,
+      0.2007701432625305,
+      0.39401242357512223,
+      0.6299999999999999,
+      0.8492298567374694,
+      0.9821574369783108,
+      0.9821574369783108,
+      0.8492298567374694,
+      0.6300000000000002,
+      0.39401242357512256,
+      0.2007701432625305,
+      0.0770724197591587,
+      0.016757719687408246,
+      -1.3877787807814457e-17
+    ]
+  },
+  "id": "smoke.window_blackman_symmetric_16",
+  "inputs": {},
+  "mapping": {
+    "fftbins_false": "Symmetric",
+    "fftbins_true": "Periodic",
+    "signal4s": "WindowSpec.Blackman(n, WindowConvention.Symmetric)"
+  },
+  "operation": "window",
+  "params": {
+    "convention": "Symmetric",
+    "fftbins": false,
+    "length": 16,
+    "name": "blackman"
+  },
+  "scipy_api": "scipy.signal.get_window",
+  "tolerance": {
+    "atol": 1e-14,
+    "rtol": 1e-12
+  },
+  "versions": {
+    "gsignal": null,
+    "numpy": "2.2.6",
+    "scipy": "1.15.3"
+  }
+}

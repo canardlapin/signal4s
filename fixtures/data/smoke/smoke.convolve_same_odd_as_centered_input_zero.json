@@ -1,0 +1,103 @@
+{
+  "expected": {
+    "samples": [
+      0.5,
+      0.25,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "id": "smoke.convolve_same_odd_as_centered_input_zero",
+  "inputs": {
+    "kernel": [
+      0.25,
+      0.5,
+      0.25
+    ],
+    "signal": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "mapping": {
+    "notes": "SciPy same centers an odd kernel on the middle tap. signal4s requires that origin explicitly via centeredOdd.",
+    "signal4s_boundary": "Zero",
+    "signal4s_kernel": {
+      "constructor": "centeredOdd",
+      "zero_lag_index": 1
+    },
+    "signal4s_region": "Input"
+  },
+  "operation": "convolve.input",
+  "params": {
+    "mode": "same"
+  },
+  "scipy_api": "scipy.signal.convolve",
+  "tolerance": {
+    "atol": 1e-14,
+    "rtol": 1e-12
+  },
+  "versions": {
+    "gsignal": null,
+    "numpy": "2.2.6",
+    "scipy": "1.15.3"
+  }
+}

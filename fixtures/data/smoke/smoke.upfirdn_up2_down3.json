@@ -1,0 +1,49 @@
+{
+  "expected": {
+    "samples": [
+      0.25,
+      1.0,
+      1.75,
+      2.5,
+      3.25,
+      4.0
+    ]
+  },
+  "id": "smoke.upfirdn_up2_down3",
+  "inputs": {
+    "h": [
+      0.25,
+      0.5,
+      0.25
+    ],
+    "signal": [
+      1.0,
+      2.0,
+      3.0,
+      4.0,
+      5.0,
+      6.0,
+      7.0,
+      8.0
+    ]
+  },
+  "mapping": {
+    "notes": "Zero-insert between samples only (not after last), full FIR, keep every down-th sample from index 0. Streaming PolyphaseResampler.consume+flush matches this batch.",
+    "signal4s": "Upfirdn(h, x, up=2, down=3)"
+  },
+  "operation": "upfirdn",
+  "params": {
+    "down": 3,
+    "up": 2
+  },
+  "scipy_api": "scipy.signal.upfirdn",
+  "tolerance": {
+    "atol": 1e-14,
+    "rtol": 1e-12
+  },
+  "versions": {
+    "gsignal": null,
+    "numpy": "2.2.6",
+    "scipy": "1.15.3"
+  }
+}
