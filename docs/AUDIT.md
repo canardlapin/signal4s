@@ -9,8 +9,10 @@ and, where applicable, SciPy fixtures listed in [`../fixtures/CATALOG.md`](../fi
 
 ## Fixture catalog
 
-Coverage is **100%** of required numerical features for 1.0. The stale “gap” row
-for lfilter/sosfilt/filtfilt was removed — those are covered by E4 fixtures.
+The catalog maps every required numerical feature to a committed fixture or
+law/behavioral suite. This is mapped fixture coverage, not a claim that every
+public API path or scientific method is complete. The stale “gap” row for
+lfilter/sosfilt/filtfilt was removed — those are covered by E4 fixtures.
 
 End-to-end workflow: `smoke.e2e_butter_welch` (SOS → Welch).
 

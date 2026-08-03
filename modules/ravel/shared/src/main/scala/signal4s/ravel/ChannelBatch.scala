@@ -3,7 +3,7 @@ package signal4s.ravel
 import gale.linalg.{DVec, DMat, DMatBuilder}
 import signal4s.SignalError
 
-/** Planar multi-channel batch: one owned [[DVec]] per channel.
+/** Planar multi-channel batch: one owned `DVec` per channel.
   *
   * Core 1-D types never depend on this; it lives only in `signal4s-ravel`.
   */

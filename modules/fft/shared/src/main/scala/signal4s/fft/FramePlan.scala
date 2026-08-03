@@ -8,7 +8,7 @@ import signal4s.internal.SampleAccess
 enum FrameAlignment:
   /** First frame starts at sample 0 (Welch / periodogram segments). */
   case FromStart
-  /** First frame starts at `-(frameLength/2)` — SciPy [[ShortTimeFFT]] for even windows. */
+  /** First frame starts at `-(frameLength/2)` — SciPy `ShortTimeFFT` for even windows. */
   case Centered
 
 /** Shared framing for STFT, Welch, and other block spectral tools. */

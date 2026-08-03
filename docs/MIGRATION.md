@@ -61,7 +61,7 @@ val _ = same
 ## Multi-channel (Ravel)
 
 ```scala
-import gale.linalg.DMat
+import gale.linalg.{DMat, Vec}
 import signal4s.*
 import signal4s.filter.Fir
 import signal4s.ravel.*

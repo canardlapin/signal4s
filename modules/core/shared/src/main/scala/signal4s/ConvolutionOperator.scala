@@ -3,7 +3,7 @@ package signal4s
 import gale.linalg.{DVec, DoubleLinearOperator, LinAlgError, MutableDVec}
 import signal4s.internal.DirectConvolution
 
-/** Finite batch convolution as a Gale [[DoubleLinearOperator]].
+/** Finite batch convolution as a Gale `DoubleLinearOperator`.
   *
   * Only zero-extension regions are supported: [[OutputRegion.Full]],
   * [[OutputRegion.Valid]], and [[OutputRegion.Input]] with [[Boundary.Zero]].
@@ -12,7 +12,7 @@ import signal4s.internal.DirectConvolution
   * not yet implemented.
   *
   * This is a finite batch map. Streaming filter runners must not extend
-  * [[DoubleLinearOperator]].
+  * `DoubleLinearOperator`.
   */
 final class ConvolutionOperator private (
     val kernel: Kernel,

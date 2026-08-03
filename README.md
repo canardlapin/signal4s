@@ -8,16 +8,17 @@ set of precise values:
 
 **Signal + Kernel + System Representation + Plan + Runner + Typed Result Axes**
 
-See [proposal.md](proposal.md) for the architecture, scope, and implementation
-sequence.
+Start with the [documentation index](site-docs/README.md). The architecture,
+scope, and implementation history remain in [proposal.md](proposal.md).
 
 ## Status
 
-**1.0 scope is implemented:** axes, convolution (direct/FFT/OLA), STFT/Welch,
-FIR/Butterworth design, multirate (`upfirdn` / `ResamplePoly`), optional
-`signal4s-ravel` axis adapters, Gale operator, and filter runners. SciPy/NumPy
-parity uses committed fixtures under `fixtures/data/`. See
-[docs/SUPPORT.md](docs/SUPPORT.md) and [docs/MIGRATION.md](docs/MIGRATION.md).
+This checkout is an implementation snapshot, not a published release. The
+current 1.0 implementation scope covers axes, convolution (direct/FFT/OLA),
+STFT/Welch, FIR/Butterworth design, multirate (`upfirdn` / `ResamplePoly`),
+optional `signal4s-ravel` axis adapters, Gale operators, and filter runners.
+The [support reference](site-docs/reference/support.md) records the important
+boundaries and deferred areas.
 
 ## Modules
 
@@ -33,7 +34,7 @@ Optional later: backends (Vector / native FFT), FS2 adapters.
 
 ## Build
 
-Requires a Gale checkout. By default the build uses `../gale` when present,
+The build uses Gale through an explicit override, a sibling `../gale` checkout,
 or a pinned git revision. Override with:
 
 ```bash
@@ -43,7 +44,13 @@ sbt -Dsignal4s.gale.build=/path/to/gale test
 ```bash
 sbt coreJVM/test fftJVM/test designJVM/test ravelJVM/test lawsJVM/test
 sbt coreJS/test fftJS/test designJS/test ravelJS/test lawsJS/test
+sbt docs/tlSite
 ```
+
+`docs/tlSite` compiles the public Markdown guides with mdoc and renders the
+local Laika site. It does not publish anything. There are no verified Maven
+coordinates for this snapshot yet; use the source build when working from a
+checkout.
 
 ### Coverage
 
@@ -83,13 +90,15 @@ before a parity suite reads numeric values.
 import gale.linalg.Vec
 import signal4s.*
 
-val fs = SampleRate.hertz(1000.0).orThrow
-val x = Signal(
-  samples = Vec.tabulate(1000)(i => math.sin(2.0 * math.Pi * 12.0 * i / fs.hertz)),
-  sampling = Sampling(fs)
-).orThrow
+val sampleRate = SampleRate.hertz(1000.0).orThrow
+val input = Signal(Vec(1.0, 2.0, 3.0, 4.0), Sampling(sampleRate)).orThrow
+val kernel = Kernel.centeredOdd(Vec(0.25, 0.5, 0.25)).orThrow
+val output = Convolution(input, kernel, OutputRegion.Full).orThrow
 
-val smoother = Kernel.causal(Vec(0.25, 0.5, 0.25)).orThrow
-val y = Convolution(x, smoother, OutputRegion.Full).orThrow
-val _ = y
+assert(output.length == 6)
+assert(output.start == Seconds.of(-0.001).orThrow)
 ```
+
+`Full` returns the complete finite-support convolution and therefore retains
+the kernel's negative-lag coordinate. See the [getting-started guide](site-docs/getting-started.md)
+for the region and boundary choices.

@@ -3,7 +3,7 @@ package signal4s.fft
 import gale.linalg.{DVec, DVecBuilder, MutableDVec}
 import signal4s.SignalError
 
-/** Split-complex vector: parallel real/imag [[DVec]] storage without boxing. */
+/** Split-complex vector: parallel real/imag `DVec` storage without boxing. */
 final case class ComplexVector private (
     real: DVec,
     imaginary: DVec

@@ -203,6 +203,25 @@ lazy val ravel =
 lazy val ravelJS  = ravel.js
 lazy val ravelJVM = ravel.jvm
 
+// Public guides live in site-docs so the repository's audit and development
+// notes under docs/ are not accidentally rendered or indexed.  The site is a
+// local generation target only; publication is intentionally not configured.
+lazy val docs =
+  project
+    .in(file("site"))
+    .dependsOn(coreJVM, fftJVM, designJVM, ravelJVM)
+    .settings(
+      name := "signal4s-docs",
+      publish / skip := true,
+      mdocIn := (baseDirectory.value / ".." / "site-docs").getCanonicalFile,
+      mdocExtraArguments := Seq(
+        "--clean-target",
+        "--check-link-hygiene",
+        "--report-relative-paths"
+      )
+    )
+    .enablePlugins(TypelevelSitePlugin)
+
 lazy val root =
   project
     .in(file("."))

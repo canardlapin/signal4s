@@ -47,4 +47,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: sbt -batch "coreJS/test" "fftJS/test"
+      - run: sbt -batch "coreJS/test" "fftJS/test" "designJS/test" "ravelJS/test" "lawsJS/test"
+
+  docs:
+    name: Executable documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: sbt
+      - run: sbt -batch docs/tlSite

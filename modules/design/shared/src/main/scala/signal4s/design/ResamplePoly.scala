@@ -5,7 +5,7 @@ import signal4s.*
 import signal4s.fft.{WindowConvention, WindowSpec}
 import signal4s.multirate.{RateRatio, Upfirdn}
 
-/** SciPy-compatible `resample_poly` built on [[Upfirdn]] + windowed-sinc design. */
+/** SciPy-compatible `resample_poly` built on `Upfirdn` + windowed-sinc design. */
 object ResamplePoly:
 
   /** Resample by `up`/`down` (GCD-reduced) with a Kaiser (β=5) lowpass by default.

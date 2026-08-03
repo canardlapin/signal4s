@@ -96,9 +96,10 @@ merges them into `vs-scipy.md`.
 - **Direct:** `scatterFull` is ~95–98% of e2e at large `N`; adopt ~1%. On
   macOS, dense full FIRs (`N ≥ 64`, `16 ≤ M ≤ 2044`) use one `vDSP_convD`
   call with thread-local off-heap staging. The vDSP-eligible receipt cells are
-  0.18–0.48× their SciPy peers on Apple Silicon; every Direct receipt cell is
-  at most 0.54×. Other platforms use the scalar/i-blocked or x86 Vector API
-  kernels.
+  0.18–0.48× their SciPy peers on Apple Silicon. The current receipt table also
+  contains a 0.57× Direct cell (`N=8192`, `M=128`), so these are scoped sample
+  results rather than a universal bound. Other platforms use the scalar/
+  i-blocked or x86 Vector API kernels.
 - **Causal FIR:** `Input(Zero)` with a causal kernel now reuses the native/vector
   full-scatter tier when \(M \le N\). This preserves scalar work when a long
   kernel would make the full tail wasteful; the measured 1024–8192 grid is
@@ -118,7 +119,8 @@ merges them into `vs-scipy.md`.
 - **upfirdn:** the general `up > 1`, `down > 1` path tracks the quotient and
   remainder of `inputIndex * up / down`. Its inner loop increments contiguous
   output positions instead of dividing once per retained tap. The receipt grid
-  is now 0.41–1.37× SciPy without materializing the upsampled signal.
+  is 0.48–1.42× SciPy in the current receipt grid without materializing the
+  upsampled signal. The range is a measured snapshot, not a platform guarantee.
 - **FFT-conv:** with the packed JTransforms real backend, the symmetric planned
   grid is ≤1.0× SciPy (8192/128 is ~0.96×). One-shot timings are reported
   separately because both implementations rebuild the kernel transform. Planned
@@ -131,4 +133,6 @@ merges them into `vs-scipy.md`.
   not a full intermediate result or a region slice.
 
 Receipts use a full settle pass, then the **median of 7 trials** (100 iters,
-50 warm-up) on both sides.
+50 warm-up) on both sides. They are machine-, JDK-, and platform-specific;
+the current receipt is dated 2026-08-01 and E11 performance work remains
+active.
