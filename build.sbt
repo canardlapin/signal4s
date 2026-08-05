@@ -41,18 +41,14 @@ addCommandAlias(
   ";clean;coverage;coreJVM/test;fftJVM/test;lawsJVM/test;coverageAggregate"
 )
 
-// Gale: prefer an explicit override, then a sibling checkout, then a pinned git
-// revision. Maven Central publication of gale-core is not assumed yet.
-lazy val galeRevision = "d55fe2f97196a76ab7879e1a12f1e92403aeba06"
+// Gale: prefer an explicit override, then the pinned git revision. Maven
+// Central publication of gale-core is not assumed yet.
+lazy val galeRevision = "f869613cec0a89e57b6c995b0a02cf471ac7127c"
 lazy val galeBuild: java.net.URI =
   sys.props
     .get("signal4s.gale.build")
     .map(path => file(path).getCanonicalFile.toURI)
-    .getOrElse {
-      val sibling = file("../gale").getCanonicalFile
-      if (sibling.isDirectory) sibling.toURI
-      else uri(s"https://github.com/canardlapin/gale.git#$galeRevision")
-    }
+    .getOrElse(uri(s"https://github.com/canardlapin/gale.git#$galeRevision"))
 
 lazy val galeCoreJVM = ProjectRef(galeBuild, "coreJVM")
 lazy val galeCoreJS  = ProjectRef(galeBuild, "coreJS")
