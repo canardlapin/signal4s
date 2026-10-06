@@ -15,7 +15,7 @@ that every item has a stable published artifact or a hosted API reference.
 | STFT and inverse | Onesided analysis/synthesis is available; custom synthesis-window invertibility is not validated by construction. |
 | Welch / periodogram | Onesided output is available; twosided estimation returns an explicit numerical failure. |
 | FIR and Butterworth-to-SOS design | Available on JVM and Scala.js for the documented design families. |
-| `upfirdn` / rational resampling | Batch and streaming paths are available; streaming resamplers require an explicit `flush`. |
+| `upfirdn` / rational resampling | Batch and streaming paths are available; streaming uses owned checkpoints, restore/reset and explicit `flush`. Factors are GCD-reduced. |
 | Gale convolution operator | Adjoint support is limited to `Full`, `Valid`, and `Input(Boundary.Zero)`. |
 | Ravel axis adapters | Optional rows/columns/channel adapters are available on JVM and Scala.js. |
 

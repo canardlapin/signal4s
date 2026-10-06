@@ -36,6 +36,14 @@ FIR, transfer-function, and SOS runners are single-owner mutable state. Use
 state, and `snapshot`/`restore` for checkpointing or deterministic replay.
 
 `PolyphaseResampler.consume` may be called repeatedly until end of stream.
+Its `samplesConsumed` counter is `Long`, so long streams preserve global phase
+past the Int boundary. This is a source API widening from the earlier Int counter.
+The runner clocks inserted zeros and owns one prototype-sized delay line;
+output vectors are owned allocations. `snapshot` copies an immutable in-memory
+checkpoint; `restore` accepts only the same reduced ratio and exact prototype.
+Snapshots retain global clocks, registers and flush state. `reset` explicitly
+starts a fresh stream. Serialized checkpoint formats and acquisition-segment
+identity remain consumer concerns.
 `flush` drains the FIR transient and marks the resampler flushed; consuming
 after that returns an error, while a second flush returns an empty vector.
 There is no implicit filter flush for `FirRunner` or `SosRunner`: they process

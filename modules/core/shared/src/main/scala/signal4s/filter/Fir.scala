@@ -6,8 +6,9 @@ import signal4s.*
 /** Causal FIR system described by a [[Kernel]] with `zeroLagIndex == 0`.
   *
   * Streaming runners are single-owner and not thread-safe. Algorithmic (group)
-  * delay for a length-`M` causal FIR is `M-1` samples at DC for a linear-phase
-  * odd-symmetric design; this type does not assume symmetry. State length is
+  * delay for a length-`M` symmetric linear-phase FIR is `(M-1)/2` samples;
+  * this type does not assume symmetry or assign a universal group delay.
+  * Causal support extends from lag 0 to `M-1`. State length is
   * `M-1` (DF-II transposed delays).
   */
 final case class Fir private (kernel: Kernel):

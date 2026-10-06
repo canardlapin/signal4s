@@ -32,10 +32,4 @@ enum WindowSpec:
       this match
         case Kaiser(_, beta, _) if !beta.isFinite || beta < 0.0 =>
           Left(SignalError.NumericalFailure("WindowSpec", s"Kaiser beta must be >= 0, got $beta"))
-        case Hann(n, WindowConvention.Symmetric) if n < 2 =>
-          Left(SignalError.NumericalFailure("WindowSpec", "symmetric Hann requires length >= 2"))
-        case Hamming(n, WindowConvention.Symmetric) if n < 2 =>
-          Left(SignalError.NumericalFailure("WindowSpec", "symmetric Hamming requires length >= 2"))
-        case Blackman(n, WindowConvention.Symmetric) if n < 2 =>
-          Left(SignalError.NumericalFailure("WindowSpec", "symmetric Blackman requires length >= 2"))
         case _ => Right(())
