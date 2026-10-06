@@ -34,8 +34,8 @@ Optional later: backends (Vector / native FFT), FS2 adapters.
 
 ## Build
 
-The build uses Gale through an explicit override, a sibling `../gale` checkout,
-or a pinned git revision. Override with:
+The build uses an exact Gale commit from upstream main. A local checkout is used
+only when explicitly selected with the system property below.
 
 ```bash
 sbt -Dsignal4s.gale.build=/path/to/gale test
