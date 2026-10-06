@@ -34,6 +34,10 @@ The important interoperability decisions are explicit:
   window can support density but cannot support spectrum normalization.
 - `AverageMethod.Median` combines raw per-bin medians without SciPy's noise-bias
   correction. The pinned SciPy Welch fixtures qualify mean averaging only.
+- Real FFT `forwardInto`/`inverseInto` require compatible scratch layout as well
+  as length. An incompatible complex-plan workspace returns a typed failure
+  before touching its existing buffers. Use `RealFftPlan.newWorkspace` for that
+  plan's platform-dependent layout.
 
 The repository's detailed numerical notes and fixture mappings remain in
 [`docs/SEMANTICS.md`](https://github.com/canardlapin/signal4s/blob/main/docs/SEMANTICS.md)
