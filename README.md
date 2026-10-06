@@ -34,6 +34,10 @@ Optional later: backends (Vector / native FFT), FS2 adapters.
 
 ## Build
 
+Use JDK 25, Node.js, and the sbt version in `project/build.properties`.
+The existing JVM native bridge uses the foreign-memory API and does not build
+on JDK 21. The JVM and Scala.js suites were verified on JDK 25 for this pin.
+
 The build uses an exact Gale commit from upstream main. A local checkout is used
 only when explicitly selected with the system property below.
 
