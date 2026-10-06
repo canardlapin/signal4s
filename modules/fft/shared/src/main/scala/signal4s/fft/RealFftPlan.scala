@@ -35,6 +35,8 @@ final class RealFftPlan private (
     if input.length != length then Left(SignalError.LengthMismatch(length, input.length))
     else if workspace.length != length then
       Left(SignalError.LengthMismatch(length, workspace.length))
+    else if !compatibleWorkspace(workspace) then
+      Left(SignalError.NumericalFailure("RealFftPlan", "incompatible real FFT workspace scratch layout"))
     else
       var i = 0
       while i < length do
@@ -62,6 +64,8 @@ final class RealFftPlan private (
       Left(SignalError.LengthMismatch(binCount, spectrum.bins.length))
     else if workspace.length != length then
       Left(SignalError.LengthMismatch(length, workspace.length))
+    else if !compatibleWorkspace(workspace) then
+      Left(SignalError.NumericalFailure("RealFftPlan", "incompatible real FFT workspace scratch layout"))
     else
       workspace.re(0) = spectrum.bins.real(0)
       workspace.im(0) = spectrum.bins.imaginary(0)
@@ -129,6 +133,11 @@ final class RealFftPlan private (
         ws.re(i) *= scale
         ws.im(i) *= scale
         i += 1
+
+  private def compatibleWorkspace(workspace: FftWorkspace): Boolean =
+    val scratchLength = if usesPackedReal then length / 2 else length
+    workspace.im.length == length && workspace.scratchRe.length == scratchLength &&
+      workspace.scratchIm.length == scratchLength
 
   private def usesPackedReal: Boolean =
     FftEngine.supportsRealLength(length)
