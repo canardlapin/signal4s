@@ -20,38 +20,37 @@ object ResamplePoly:
       window: WindowSpec = WindowSpec.Kaiser(1, 5.0, WindowConvention.Symmetric)
   ): Either[SignalError, DVec] =
     RateRatio(up, down).flatMap { ratio =>
-      if ratio.isIdentity then Right(signal.copy)
+      if signal.length == 0 || ratio.isIdentity then Right(signal.copy)
       else
         val maxRate = math.max(ratio.up, ratio.down)
-        val halfLen = 10 * maxRate
-        val numTaps = 2 * halfLen + 1
-        // firwin cutoff is relative to Nyquist; use Frequency at fs=2 so Nyquist=1
-        val fs = SampleRate.unsafe(2.0)
-        val cutoff = Frequency.unsafe(1.0 / maxRate) // cycles/sample * Nyquist=1 → Hz at fs=2
-        val win = withLength(window, numTaps)
-        FirDesign.lowPass(numTaps, cutoff, fs, win).flatMap { designed =>
-          // Scale by up (SciPy)
-          val h0 = DVec.tabulate(designed.fir.taps.length)(i => designed.fir.taps(i) * ratio.up)
-          val nPrePad = ratio.down - halfLen % ratio.down
-          val nOut = outputLen(signal.length, ratio.up, ratio.down)
-          val nPreRemove = (halfLen + nPrePad) / ratio.down
-          var nPostPad = 0
-          var hLen = h0.length + nPrePad + nPostPad
-          while Upfirdn.outputLength(hLen, signal.length, ratio.up, ratio.down) < nOut + nPreRemove do
-            nPostPad += 1
-            hLen = h0.length + nPrePad + nPostPad
-          val h = padFilter(h0, nPrePad, nPostPad)
-          Upfirdn(h, signal, ratio).map { y =>
-            val until = math.min(y.length, nPreRemove + nOut)
-            if nPreRemove >= until then DVec.zeros(0)
-            else y.slice(nPreRemove, until).copy
+        val halfLen = 10L * maxRate
+        val numTaps = 2L * halfLen + 1L
+        val nPrePad = ratio.down.toLong - halfLen % ratio.down
+        val nPreRemove = (halfLen + nPrePad) / ratio.down
+        val product = signal.length.toLong * ratio.up
+        val nOut = product / ratio.down + (if product % ratio.down == 0 then 0L else 1L)
+        val needed = nOut + nPreRemove
+        // Solve the full upfirdn length inequality directly, avoiding a padding loop.
+        val minimumFilterLength = (needed - 1L) * ratio.down - (signal.length - 1L) * ratio.up + 1L
+        val nPostPad = math.max(0L, minimumFilterLength - numTaps - nPrePad)
+        val hLen = numTaps + nPrePad + nPostPad
+        if numTaps > Int.MaxValue || needed > Int.MaxValue || hLen > Int.MaxValue then
+          Left(SignalError.NumericalFailure("ResamplePoly", "prototype or output length exceeds Int capacity"))
+        else
+          // firwin cutoff is relative to Nyquist; at fs=2, Nyquist=1.
+          val fs = SampleRate.unsafe(2.0)
+          val cutoff = Frequency.unsafe(1.0 / maxRate)
+          val win = withLength(window, numTaps.toInt)
+          FirDesign.lowPass(numTaps.toInt, cutoff, fs, win).flatMap { designed =>
+            val h0 = DVec.tabulate(designed.fir.taps.length)(i => designed.fir.taps(i) * ratio.up)
+            val h = padFilter(h0, nPrePad.toInt, nPostPad.toInt)
+            Upfirdn(h, signal, ratio).map { y =>
+              val until = math.min(y.length.toLong, needed).toInt
+              if nPreRemove >= until then DVec.zeros(0)
+              else y.slice(nPreRemove.toInt, until).copy
+            }
           }
-        }
     }
-
-  private def outputLen(nIn: Int, up: Int, down: Int): Int =
-    val nOut = nIn.toLong * up
-    (nOut / down + (if nOut % down != 0 then 1 else 0)).toInt
 
   private def padFilter(h: DVec, pre: Int, post: Int): DVec =
     val out = DVecBuilder.zeros(h.length + pre + post)

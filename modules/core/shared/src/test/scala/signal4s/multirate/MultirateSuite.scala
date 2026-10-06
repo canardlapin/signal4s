@@ -110,7 +110,7 @@ class MultirateSuite extends munit.FunSuite:
   test("streaming resampler flush is idempotent and closes the input"):
     assert(PolyphaseResampler(DVec.zeros(0), RateRatio.identity).isLeft)
     val resampler = PolyphaseResampler(h, up = 2, down = 3).orThrow
-    assertEquals(resampler.samplesConsumed, 0)
+    assertEquals(resampler.samplesConsumed, 0L)
     assertClose(resampler.consume(DVec.zeros(0)).orThrow, DVec.zeros(0))
     assertClose(resampler.flush().orThrow, DVec.zeros(0))
     assert(resampler.isFlushed)

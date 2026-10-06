@@ -27,7 +27,7 @@ class FftStructureSuite extends munit.FunSuite:
       WindowSpec.Hann(1, WindowConvention.Symmetric),
       WindowSpec.Hamming(1, WindowConvention.Symmetric),
       WindowSpec.Blackman(1, WindowConvention.Symmetric)
-    ).foreach(spec => assert(spec.validate.isLeft, clue = spec.toString))
+    ).foreach(spec => assert(spec.validate.isRight, clue = spec.toString))
     assert(WindowSpec.Hann(1, WindowConvention.Periodic).validate.isRight)
 
   test("time and frequency axes validate lengths, finite steps, and grids"):

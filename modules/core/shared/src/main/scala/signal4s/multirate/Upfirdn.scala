@@ -6,7 +6,9 @@ import signal4s.SignalError
 /** Upsample → FIR → downsample (SciPy `signal.upfirdn` semantics).
   *
   * Equivalent to zero-insertion by `up`, full convolution with `h`, then
-  * keeping every `down`-th sample starting at index 0.
+  * keeping every `down`-th sample starting at index 0. Factors are GCD-reduced
+  * through [[RateRatio]]; coefficients describe that reduced interpolation grid.
+  * SciPy parity therefore requires the same reduced factors and prototype.
   */
 object Upfirdn:
 
@@ -21,12 +23,24 @@ object Upfirdn:
   def apply(h: DVec, x: DVec, ratio: RateRatio): Either[SignalError, DVec] =
     if h.length == 0 then Left(SignalError.EmptyKernel)
     else if x.length == 0 then Right(DVec.zeros(0))
+    else if computedOutputLength(h.length, x.length, ratio.up, ratio.down) > Int.MaxValue then
+      Left(SignalError.NumericalFailure("Upfirdn", "output length exceeds Int capacity"))
     else Right(polyphase(h, x, ratio.up, ratio.down))
 
-  /** Output length matching SciPy `_output_len`. */
+  /** Output length for the supplied interpolation grid, matching SciPy `_output_len`.
+    * To predict [[apply]], pass the GCD-reduced [[RateRatio]] factors. Invalid
+    * dimensions or an unrepresentable Int result throw `IllegalArgumentException`.
+    */
   def outputLength(hLen: Int, xLen: Int, up: Int, down: Int): Int =
-    if xLen == 0 then 0
-    else ((xLen - 1) * up + hLen + down - 1) / down
+    require(hLen > 0 && xLen >= 0 && up > 0 && down > 0,
+      "output length requires positive taps/factors and nonnegative input length")
+    val length = computedOutputLength(hLen, xLen, up, down)
+    require(length <= Int.MaxValue, "output length exceeds Int capacity")
+    length.toInt
+
+  private def computedOutputLength(hLen: Int, xLen: Int, up: Int, down: Int): Long =
+    if xLen == 0 then 0L
+    else ((xLen - 1L) * up + hLen - 1L) / down + 1L
 
   /** Scatter only kept phases onto an Array; values match upsample→FIR→decimate. */
   private def polyphase(h: DVec, x: DVec, up: Int, down: Int): DVec =
@@ -44,7 +58,7 @@ object Upfirdn:
       scatterFull(xx, hh, acc, n, m)
     else if down == 1 then
       scatterUpsampleOnly(xx, hh, acc, n, m, up, outLen)
-    else if up == 1 then
+    else if up == 1 && down <= math.min(m, n) then
       scatterDecimateBanked(xx, hh, acc, n, m, down, outLen)
     else
       scatterPolyphase(xx, hh, acc, n, m, up, down, outLen)
@@ -117,7 +131,7 @@ object Upfirdn:
       val ks = new Array[Int](nTaps)
       var t = 0
       var k = start
-      while k < m do
+      while t < nTaps do
         ks(t) = k
         t += 1
         k += down
@@ -167,15 +181,16 @@ object Upfirdn:
     while xi < n do
       val xn = xx(xi)
       if xn != 0.0 then
-        var k = if phase == 0 then 0 else down - phase
+        var k = if phase == 0 then 0L else (down - phase).toLong
         var oi = outBase + (if phase == 0 then 0 else 1)
         while k < m && oi < outLen do
-          acc(oi) += xn * hh(k)
-          k += down
+          acc(oi) += xn * hh(k.toInt)
+          k += down.toLong
           oi += 1
       outBase += upQuot
-      phase += upRem
-      if phase >= down then
-        phase -= down
+      // Avoid overflowing Int when two individually valid residues are added.
+      if phase >= down - upRem then
+        phase -= down - upRem
         outBase += 1
+      else phase += upRem
       xi += 1

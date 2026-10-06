@@ -154,7 +154,7 @@ object WelchPlan:
       Left(SignalError.NumericalFailure("WelchPlan", s"nfft=$nfft < window ${window.length}"))
     else
       FramePlan(window.length, hop, FrameAlignment.FromStart, Boundary.Zero).flatMap { frames =>
-        RealFftPlan(nfft, FftNormalization.Backward, sampleRate).map { fft =>
+        RealFftPlan(nfft, FftNormalization.Backward, sampleRate).flatMap { fft =>
           var sumW = 0.0
           var sumW2 = 0.0
           var i = 0
@@ -163,7 +163,13 @@ object WelchPlan:
             sumW += w
             sumW2 += w * w
             i += 1
-          new WelchPlan(
+          val normalization = scaling match
+            case SpectralScaling.Density => sampleRate.hertz * sumW2
+            case SpectralScaling.Spectrum => sumW * sumW
+          if !normalization.isFinite || normalization <= 0.0 then
+            // A plan must not publish successful NaN/Infinity from an undefined divisor.
+            Left(SignalError.NumericalFailure("WelchPlan", "spectral normalization must be finite and positive"))
+          else Right(new WelchPlan(
             window,
             frames,
             nfft,
@@ -175,7 +181,7 @@ object WelchPlan:
             fft,
             sumW,
             sumW2
-          )
+          ))
         }
       }
 

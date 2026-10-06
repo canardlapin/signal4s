@@ -35,18 +35,23 @@ object Window:
       var i = 0
       while i < taps.length do
         val w = taps(i)
+        if !w.isFinite then
+          return Left(SignalError.NumericalFailure("Window", s"nonfinite tap at index $i"))
         sum += w
         sumSq += w * w
         i += 1
+      if !sum.isFinite || !sumSq.isFinite then
+        return Left(SignalError.NumericalFailure("Window", "window gain exceeds finite Double capacity"))
       val coherent = sum / n
       val power = sumSq / n
       val enbw =
         if sum == 0.0 then Double.PositiveInfinity
-        else n * sumSq / (sum * sum)
+        else n * (sumSq / sum) / sum
       Right(new Window(taps, convention, coherent, power, enbw))
 
   private def materialize(spec: WindowSpec): DVec =
-    spec match
+    if spec.length == 1 then DVec.tabulate(1)(_ => 1.0)
+    else spec match
       case WindowSpec.Rectangular(n, _) =>
         DVec.tabulate(n)(_ => 1.0)
       case WindowSpec.Hann(n, conv) =>
