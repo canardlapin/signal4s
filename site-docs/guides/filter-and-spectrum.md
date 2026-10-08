@@ -50,3 +50,46 @@ the current implementation does not provide a true Gustafsson calculation for
 all filter forms; see [support and maturity](../reference/support.md).
 
 Next: [carry a filter across chunks](streaming.md) or [reuse FFT plans](fft-and-plans.md).
+
+## Owned bounded periodograms
+
+`BoundedPeriodogramPlan` estimates exactly one full frame using a caller-owned
+workspace. Its portable radix-2/Bluestein route owns FFT buffers and tables;
+it does not depend on native scratch pools or global numerical caches. Odd,
+prime and padded FFT lengths are admitted up to the explicit shape cap.
+Inspect capacities before reserving a workspace. Primitive payload capacities
+include both direction tables, chirps/kernel arrays, frame scratch and owned
+output. Object/reference/allocator/GC/RSS costs are excluded; this is not a
+heap limit or a complete-workload benchmark.
+
+```scala mdoc:silent
+val boundedGuidePlan = BoundedPeriodogramPlan(
+  filterGuideWindow, filterGuideRate, 65, Detrend.Mean,
+  SpectralScaling.Density
+).orThrow
+val boundedGuideCapacity = boundedGuidePlan.resources
+assert(boundedGuideCapacity.workspaceBytes > 0)
+val boundedGuideWorkspace = boundedGuidePlan.newWorkspace()
+val boundedGuideFrame = filterGuideOutput.slice(0, 64)
+val boundedGuideFirst = boundedGuidePlan.estimateInto(boundedGuideFrame, boundedGuideWorkspace).orThrow
+boundedGuidePlan.estimateInto(Vec.zeros(64), boundedGuideWorkspace).orThrow
+assert(boundedGuideFirst.power.toSeq.exists(_ > 0))
+assert(boundedGuideFirst.segmentCount == 1)
+assert(boundedGuideFirst.degreesOfFreedom.isEmpty)
+```
+
+A workspace belongs to its exact plan and is single-owner/not thread-safe.
+Returned power vectors own their storage. Foreign workspaces, shapes, nonfinite
+inputs or unrepresentable power return errors; no partial power result escapes.
+Mean detrending uses anchored differences and exact normalized sums, preserving
+small variation under a large constant offset. Frame magnitudes are normalized
+before FFT and restored with exponent arithmetic after spectral normalization.
+Welch's mean accumulation uses exact sums/normalized readout so an overflowing
+sum of finite frame powers does not invalidate a finite mean. Rounded underflow
+follows binary64. Anchored differences/detrended magnitudes exceeding finite
+capacity are explicit failures; this is not exact real-arithmetic detrending.
+The legacy raw-median convention remains unchanged, without a SciPy median-bias
+correction; only its numerical midpoint and size admission are improved.
+
+These APIs estimate linear power. Logarithmic baseline correction and its
+averaging order belong to a separately declared operation.

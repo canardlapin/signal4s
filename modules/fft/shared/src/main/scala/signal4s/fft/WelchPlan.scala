@@ -2,6 +2,7 @@ package signal4s.fft
 
 import gale.linalg.{DVec, DVecBuilder}
 import signal4s.*
+import gale.numeric.ExactSum
 
 /** Welch PSD / power-spectrum estimator sharing [[FramePlan]]. */
 final class WelchPlan private (
@@ -28,7 +29,11 @@ final class WelchPlan private (
           Left(SignalError.NumericalFailure("WelchPlan", "signal shorter than one segment"))
         else
           val binCount = nfft / 2 + 1
-          val acc = Array.fill(binCount)(0.0)
+          val acc = Array.fill(binCount)(ExactSum.zero())
+          val normalizer = ExactSum.zero()
+          val _ = normalizer.add(nFull.toDouble)
+          if average == AverageMethod.Median && BigInt(nFull) * binCount > Int.MaxValue then
+            return Left(SignalError.NumericalFailure("WelchPlan", "median workspace exceeds Int capacity"))
           val accSq = if average == AverageMethod.Median then Array.ofDim[Double](nFull * binCount) else null
           val workspace = fft.newWorkspace()
           var s = 0
@@ -37,21 +42,26 @@ final class WelchPlan private (
             extractWelchFrame(signal, s) match
               case Left(e) => err = Some(e)
               case Right(raw) =>
-                val detrended = DetrendOps(raw, detrend)
-                val windowed = applyWindow(detrended)
-                fft.forwardInto(pad(windowed), workspace) match
+                SpectralFrame.prepare(raw, window, detrend).flatMap { case (windowed, scale) =>
+                  fft.forwardInto(pad(windowed), workspace).map(_ => scale)
+                } match
                   case Left(e) => err = Some(e)
-                  case Right(_) =>
+                  case Right(scale) =>
                     var k = 0
-                    while k < binCount do
+                    while k < binCount && err.isEmpty do
                       val re = workspace.re(k)
                       val im = workspace.im(k)
-                      val p = re * re + im * im
-                      average match
-                        case AverageMethod.Mean =>
-                          acc(k) += p
-                        case AverageMethod.Median =>
-                          accSq(s * binCount + k) = p
+                      val factor = if k == 0 || (nfft % 2 == 0 && k == binCount - 1) then 1.0 else 2.0
+                      val divisor = if scaling == SpectralScaling.Density then sampleRate.hertz * sumW2 else sumW * sumW
+                      SpectralFrame.power(re, im, scale, divisor, factor) match
+                        case Left(e) => err = Some(e)
+                        case Right(p) => average match
+                          case AverageMethod.Mean =>
+                            acc(k).add(p) match
+                              case Left(e) => err = Some(SignalError.NumericalFailure("WelchPlan", e.message))
+                              case Right(_) => ()
+                          case AverageMethod.Median =>
+                            accSq(s * binCount + k) = p
                       k += 1
             s += 1
           err match
@@ -62,7 +72,9 @@ final class WelchPlan private (
                 case AverageMethod.Mean =>
                   var k = 0
                   while k < binCount do
-                    power(k) = scaleBin(acc(k) / nFull.toDouble, k, binCount)
+                    acc(k).ratio(normalizer) match
+                      case Left(e) => return Left(SignalError.NumericalFailure("WelchPlan", e.message))
+                      case Right(value) => power(k) = value
                     k += 1
                 case AverageMethod.Median =>
                   var k = 0
@@ -75,8 +87,16 @@ final class WelchPlan private (
                     java.util.Arrays.sort(vals)
                     val med =
                       if nFull % 2 == 1 then vals(nFull / 2)
-                      else 0.5 * (vals(nFull / 2 - 1) + vals(nFull / 2))
-                    power(k) = scaleBin(med, k, binCount)
+                      else
+                        val middle = ExactSum.zero()
+                        val two = ExactSum.zero()
+                        val _ = middle.add(vals(nFull / 2 - 1))
+                        val _ = middle.add(vals(nFull / 2))
+                        val _ = two.add(2.0)
+                        middle.ratio(two) match
+                          case Left(e) => return Left(SignalError.NumericalFailure("WelchPlan", e.message))
+                          case Right(value) => value
+                    power(k) = med
                     k += 1
               FrequencyAxis.realFft(nfft, sampleRate).map { freqs =>
                 WelchResult(
@@ -114,9 +134,6 @@ final class WelchPlan private (
         i += 1
       Right(out.result())
 
-  private def applyWindow(frame: DVec): DVec =
-    DVec.tabulate(frame.length)(i => frame(i) * window.taps(i))
-
   private def pad(frame: DVec): DVec =
     if frame.length == nfft then frame
     else
@@ -126,18 +143,6 @@ final class WelchPlan private (
         out(i) = frame(i)
         i += 1
       out.result()
-
-  /** SciPy onesided scaling for density / spectrum. */
-  private def scaleBin(meanPower: Double, k: Int, binCount: Int): Double =
-    val fs = sampleRate.hertz
-    val onesidedFactor =
-      if k == 0 || (nfft % 2 == 0 && k == binCount - 1) then 1.0
-      else 2.0
-    scaling match
-      case SpectralScaling.Density =>
-        onesidedFactor * meanPower / (fs * sumW2)
-      case SpectralScaling.Spectrum =>
-        onesidedFactor * meanPower / (sumW * sumW)
 
 object WelchPlan:
   def apply(
