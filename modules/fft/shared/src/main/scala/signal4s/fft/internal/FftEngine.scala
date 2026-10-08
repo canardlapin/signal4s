@@ -300,8 +300,11 @@ private[fft] object FftEngine:
 
   /** In-place iterative radix-2 Cooley–Tukey with bit-reversal. */
   private def radix2Bitrev(re: Array[Double], im: Array[Double], inverse: Boolean): Unit =
+    radix2Owned(re, im, inverse, Radix2Tables.forLength(re.length))
+
+  /** Explicit tables: no platform scratch or global cache is touched. */
+  private[fft] def radix2Owned(re: Array[Double], im: Array[Double], inverse: Boolean, tables: Radix2Tables): Unit =
     val n = re.length
-    val tables = Radix2Tables.forLength(n)
     applyBitrev(re, im, tables.bitrev)
     val stages = if inverse then tables.invStages else tables.fwdStages
     var s = 0
@@ -650,18 +653,18 @@ private[fft] object FftEngine:
       i += 1
 
 /** Cached bit-reversal permutation and per-stage twiddles for one FFT length. */
-private[internal] final class Radix2Tables private (
+private[fft] final class Radix2Tables private (
     val bitrev: Array[Int],
     val fwdStages: Array[Radix2Stage],
     val invStages: Array[Radix2Stage]
 )
 
-private[internal] final class Radix2Stage(
+private[fft] final class Radix2Stage(
     val wRe: Array[Double],
     val wIm: Array[Double]
 )
 
-private[internal] object Radix2Tables:
+private[fft] object Radix2Tables:
   private var cache: Map[Int, Radix2Tables] = Map.empty
 
   def forLength(n: Int): Radix2Tables =
@@ -676,6 +679,8 @@ private[internal] object Radix2Tables:
               cache = cache.updated(n, built)
               built
         }
+
+  def owned(n: Int): Radix2Tables = build(n)
 
   private def build(n: Int): Radix2Tables =
     val bitrev = Array.ofDim[Int](n)
