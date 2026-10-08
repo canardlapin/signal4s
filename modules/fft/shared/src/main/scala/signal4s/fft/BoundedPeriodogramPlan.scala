@@ -95,7 +95,9 @@ object BoundedPeriodogramPlan:
     if nfft < window.length || nfft > MaxFftLength then
       Left(SignalError.NumericalFailure("periodogram.shape", "FFT length outside window/bounded capacity"))
     else
-      WelchPlan(window, window.length, sampleRate, nfft, detrend = detrend, scaling = scaling).flatMap { _ =>
+      FrequencyAxis.realFft(nfft, sampleRate).flatMap { _ =>
+        WelchPlan(window, window.length, sampleRate, nfft, detrend = detrend, scaling = scaling)
+      }.flatMap { _ =>
         var sumW = 0.0
         var sumW2 = 0.0
         var i = 0

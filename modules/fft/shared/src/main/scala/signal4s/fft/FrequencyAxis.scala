@@ -32,6 +32,8 @@ object FrequencyAxis:
       val bins = sourceLength / 2 + 1
       val stepHz = sampleRate.hertz / sourceLength.toDouble
       for
+        _ <- if stepHz > 0.0 && stepHz.isFinite then Right(())
+          else Left(SignalError.NumericalFailure("FrequencyAxis", "positive FFT spacing is not representable"))
         first <- Frequency.hertz(0.0)
         step <- Frequency.hertz(stepHz)
         axis <- apply(first, step, bins)

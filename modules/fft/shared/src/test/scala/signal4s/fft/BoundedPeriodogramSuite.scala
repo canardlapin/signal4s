@@ -87,3 +87,9 @@ class BoundedPeriodogramSuite extends munit.FunSuite:
     val power = WelchPlan(w, 4, rate, 4, detrend = Detrend.None, average = AverageMethod.Median).orThrow
       .estimate(Vec.fill(8)(1e154)).orThrow.power
     assertEqualsDouble(power(0) / 1e308, 1, 1e-14)
+
+  test("FFT frequency grids refuse an underflowed positive spacing before spectral allocation"):
+    val tiny = SampleRate.hertz(java.lang.Double.MIN_VALUE).orThrow
+    assert(FrequencyAxis.realFft(2, tiny).isLeft)
+    val w = Window.fromSpec(WindowSpec.Rectangular(1, WindowConvention.Periodic)).orThrow
+    assert(BoundedPeriodogramPlan(w, tiny, 2).isLeft)
