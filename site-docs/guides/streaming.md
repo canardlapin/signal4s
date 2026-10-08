@@ -53,3 +53,29 @@ Do not share a runner or workspace concurrently. If two execution paths need
 the same filter description, give each path its own runner.
 
 Next: [reuse immutable FFT plans](fft-and-plans.md) or [map a filter across channels](multichannel.md).
+
+## FIR finite refusal and capacities
+
+Causal FIR construction requires finite coefficients. A runner stages delay state
+and output before committing a block: nonfinite input/state or overflowing output/
+delay arithmetic returns an error and preserves the completed prefix and caller
+output destination. Restored/initial state must also be finite. Ordinary successful
+DF-II transposed arithmetic and partition conventions are unchanged. Rounded
+underflow follows binary64; exact cancellation of overflowing intermediate terms
+is not claimed.
+
+```scala mdoc:silent
+val finiteFirGuide = signal4s.filter.Fir.causal(gale.linalg.Vec(0.25, 0.5, 0.25)).orThrow
+val finiteFirResources = finiteFirGuide.resources
+assert(finiteFirResources.stateBytes == 16)
+assert(finiteFirResources.coefficientBytes == 32)
+assert(finiteFirResources.processIntoScratchBytes(5).orThrow == 56)
+assert(finiteFirResources.ownedProcessAdditionalBytes(5).orThrow == 136)
+```
+
+Resources describe primitive array payloads: taps plus the shared unit denominator,
+delay registers, independent snapshots, staged block/state and owned-output copies.
+Caller input/destination, stack scalars, object/reference/allocator/GC/RSS overhead
+and escaped output lifetime are excluded. Inspection allocates no runner/workspace.
+These are capacity facts, not a zero-allocation or complete-workload performance
+claim. Runners/destinations remain single-owner, not thread-safe.
