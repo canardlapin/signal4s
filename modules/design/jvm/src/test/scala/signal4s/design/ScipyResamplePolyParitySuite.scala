@@ -14,7 +14,7 @@ class ScipyResamplePolyParitySuite extends munit.FunSuite:
       val x = DVec.fromSeq(array(text, "inputs", "signal"))
       val expected = DVec.fromSeq(array(text, "expected", "samples"))
       val actual = ResamplePoly(x, up, down).orThrow
-      assertClose(actual, expected, 1e-8, 1e-10)
+      assertClose(actual, expected, 1e-12, 1e-12)
   }
 
   private def read(id: String): String =

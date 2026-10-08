@@ -93,3 +93,40 @@ correction; only its numerical midpoint and size admission are improved.
 
 These APIs estimate linear power. Logarithmic baseline correction and its
 averaging order belong to a separately declared operation.
+
+
+## Bounded centered resampling
+
+`ResamplePolyPlan` designs one immutable Kaiser5 prototype for the reduced rational
+rate. `inputWindow` computes the exact observed support of an absolute output
+window; `processWindow` consumes precisely that support and retains segment-global
+phase. No source-length array or replay from ordinal0 is required. Outside the
+segment is zero padding; symmetric prototype delay is removed, as in SciPy
+resample_poly with constant padding. Output length is ceil(inputLength*up/down).
+Long clocks and support use exact integer arithmetic, with typed capacity refusal.
+Finite input and late overflow expose no reusable partial result. ResamplePoly
+batch convenience shares this numeric core. Raw Upfirdn/streaming resampler remain
+separately described APIs, without this plan's bounded/finite contract.
+
+```scala mdoc
+import signal4s.design.ResamplePolyPlan
+val centeredPlan = ResamplePolyPlan(2, 3).orThrow
+val requiredSupport = centeredPlan.inputWindow(1000L, 301L, 8).orThrow
+val observedSupport = gale.linalg.Vec.tabulate(requiredSupport.count)(_ => 1.0)
+val centeredWindow = centeredPlan.processWindow(observedSupport, requiredSupport.start, 1000L, 301L, 8).orThrow
+```
+
+`coefficientBytes`, `maximumInputCount`, `inputHalo` and
+`processAdditionalBytes` describe retained/staged primitive numeric payloads.
+The output estimate conservatively includes builder and completed owned storage.
+Caller input, metadata/objects/BigInt/allocator/GC/RSS and plan-design construction
+are excluded. These are engineering capacities, not end-to-end performance claims.
+
+
+Kaiser taps use the positive I0 series through beta500 and a scaled/logarithmic
+large-argument expansion beyond it, avoiding overflowing normalization. The formulas
+follow [NIST DLMF10.25.2](https://dlmf.nist.gov/10.25.E2) and
+[NIST DLMF10.40.1](https://dlmf.nist.gov/10.40.E1). Independent frozen SciPy i0e ratios
+cover symmetric/periodic windows across beta0..1000; extreme finite beta also stays
+finite. Underflowed tails may round to zero. Matching resample_poly smoke tolerance
+is1e-12 relative plus1e-12 absolute. No new special-function library is required.
