@@ -104,27 +104,48 @@ object Window:
       out.result()
     else
       val alpha = (n - 1).toDouble / 2.0
-      val i0Beta = besselI0(beta)
+      val i0Beta = if beta<=500.0 then besselI0(beta) else 0.0
+      val logDenominator = if beta>500.0 then logScaledI0(beta) else 0.0
       var i = 0
       while i < n do
         val t = (i.toDouble - alpha) / alpha
         val r = math.sqrt(math.max(0.0, 1.0 - t * t))
-        out(i) = besselI0(beta * r) / i0Beta
+        val x=beta*r
+        out(i) = if beta<=500.0 then besselI0(x)/i0Beta
+          else math.exp((x-beta)+logScaledI0(x)-logDenominator)
         i += 1
       out.result()
 
-  /** Modified Bessel function I₀ via series (SciPy-compatible for window betas). */
+  /** Positive I0 series, NIST DLMF10.25.2 at nu=0; used only for x<=500
+    * so every term/sum remains finite. Stop only when rounding adds no term.
+    */
   private def besselI0(x: Double): Double =
-    val ax = math.abs(x)
-    if ax < 3.75 then
-      val y = (x / 3.75)
-      val y2 = y * y
-      1.0 + y2 * (3.5156229 + y2 * (3.0899424 + y2 * (1.2067492 +
-        y2 * (0.2659732 + y2 * (0.0360768 + y2 * 0.0045813)))))
+    val z=x*x/4.0
+    var term=1.0
+    var sum=1.0
+    var k=1
+    var done=false
+    while !done do
+      term*=z/(k.toDouble*k)
+      val next=sum+term
+      done=next==sum
+      sum=next
+      k+=1
+    sum
+
+  /** log(exp(-x)*I0(x)). Beyond500 use the positive nu=0 asymptotic
+    * expansion (NIST DLMF10.40.1); twelve terms are below Double precision
+    * there. Separate logarithms keep even Double.MaxValue beta finite.
+    */
+  private def logScaledI0(x: Double): Double =
+    if x<=500.0 then math.log(besselI0(x))-x
     else
-      val y = 3.75 / ax
-      val expr =
-        0.39894228 + y * (0.01328592 + y * (0.00225319 + y * (-0.00157565 +
-          y * (0.00916281 + y * (-0.02057706 + y * (0.02635537 +
-            y * (-0.01647633 + y * 0.00392377)))))))
-      math.exp(ax) / math.sqrt(ax) * expr
+      var term=1.0
+      var sum=1.0
+      var k=1
+      while k<=12 do
+        val odd=2.0*k-1.0
+        term*=((odd*odd)/(8.0*k))/x
+        sum+=term
+        k+=1
+      -0.5*(math.log(2.0*math.Pi)+math.log(x))+math.log(sum)
