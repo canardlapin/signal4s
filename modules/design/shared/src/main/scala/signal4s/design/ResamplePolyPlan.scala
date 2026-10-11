@@ -72,15 +72,34 @@ final class ResamplePolyPlan private (val ratio: RateRatio, val coefficients: DV
         if !finite then fail("nonfinite input")
         else
           val out=DVecBuilder.zeros(outputCount)
+          // Admit the complete clock range once. Ordinary windows need no BigInt
+          // per output; very large absolute segment ordinals keep the exact path.
+          val firstClock=BigInt(outputStart)*ratio.down+halfLength
+          val lastClock=(BigInt(outputStart)+outputCount-1)*ratio.down+halfLength
+          val primitive=outputCount>0 && lastClock.isValidLong
+          var clockLong=if primitive then firstClock.toLong else 0L
+          val requiredStop=required.start+required.count.toLong
           var q=0
           var error=false
           while q<outputCount && !error do
-            val clock=(BigInt(outputStart)+q)*ratio.down+halfLength
-            val first=ceil(clock-(coefficients.length-1),ratio.up).max(required.start)
-            val stop=(floor(clock,ratio.up)+1).min(BigInt(required.start)+required.count)
-            var n=(first-required.start).toInt
-            val end=(stop-required.start).toInt
-            var tap=(clock-first*ratio.up).toInt
+            var n=0;var end=0;var tap=0
+            if primitive then
+              val lower=clockLong-(coefficients.length-1)
+              val quotient=lower/ratio.up
+              val ceilLower=quotient+(if lower>0 && lower%ratio.up!=0 then 1 else 0)
+              val first=math.max(ceilLower,required.start)
+              val upper=clockLong/ratio.up
+              // Clip before adding1 so an upper index at Long.MaxValue cannot wrap.
+              val stop=if upper>=requiredStop-1 then requiredStop else upper+1
+              n=(first-required.start).toInt;end=(stop-required.start).toInt
+              // This bounded difference avoids a potentially overflowing first*up.
+              tap=(clockLong%ratio.up+(upper-first)*ratio.up).toInt
+            else
+              val clock=(BigInt(outputStart)+q)*ratio.down+halfLength
+              val first=ceil(clock-(coefficients.length-1),ratio.up).max(required.start)
+              val stop=(floor(clock,ratio.up)+1).min(BigInt(required.start)+required.count)
+              n=(first-required.start).toInt;end=(stop-required.start).toInt
+              tap=(clock-first*ratio.up).toInt
             var sum=0.0
             while n<end && !error do
               val value=input(n)
@@ -91,6 +110,7 @@ final class ResamplePolyPlan private (val ratio: RateRatio, val coefficients: DV
               tap-=ratio.up
             if !error then out(q)=sum
             q+=1
+            if primitive && q<outputCount then clockLong+=ratio.down
           if error then fail("nonfinite output/intermediate") else Right(out.result())
 
 object ResamplePolyPlan:
