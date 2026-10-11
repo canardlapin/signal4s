@@ -1,0 +1,19 @@
+package signal4s.fft
+
+private[fft] object BoundedStftGoldens:
+  final case class Case(id:String,input:Vector[Double],window:Vector[Double],nfft:Int,
+      detrend:Detrend,scaling:StftScaling,real:Vector[Double],imaginary:Vector[Double])
+  val cases: Vector[Case] = Vector(
+    Case("impulse_phase",Vector(0.0,1.0,0.0,0.0),Vector(1.0,1.0,1.0,1.0),4,Detrend.None,StftScaling.Raw,Vector(1.0,0.0,-1.0),Vector(0.0,-1.0,0.0)),
+    Case("hann_analysis_only",Vector(0.0,0.0,1.0,0.0),Vector(0.0,0.5,1.0,0.5),4,Detrend.None,StftScaling.Raw,Vector(1.0,-1.0,1.0),Vector(0.0,0.0,0.0)),
+    Case("odd_prime_linear",Vector(1.0,3.0,-2.0,5.0,2.0),Vector(1.0,1.0,1.0,1.0,1.0),7,Detrend.Linear,StftScaling.Density,Vector(4.996003610813204e-16,-0.015537125746590413,0.49633170955205463,-0.48079458380546414),Vector(0.0,0.10940979782248983,-0.06153836033663129,-0.7803797321480874)),
+    Case("prime_symmetric",Vector(1.0,-2.0,3.0,-4.0,5.0,-6.0,7.0),Vector(0.0,0.24999999999999994,0.75,1.0,0.7500000000000002,0.25000000000000033,0.0),11,Detrend.Mean,StftScaling.Raw,Vector(-1.7142857142857149,0.2676617821596732,1.0716710888486518,0.3148062887543335,-7.553319745983883,6.756323443364081),Vector(0.0,1.168301239701408,0.3197248871635858,-3.5629594519886902,2.3300789620021365,9.268120540186409)),
+    Case("padded_periodic",Vector(1.0,2.0,-3.0,4.0,5.0,-6.0,7.0,8.0),Vector(0.0,0.14644660940672627,0.5,0.8535533905932737,1.0,0.8535533905932737,0.5,0.14644660940672627),16,Detrend.Mean,StftScaling.Magnitude,Vector(-0.5606601717798212,-0.2702301609902731,0.4356601717798212,-1.1716318289226528,0.75,2.9393987818890217,-1.8106601717798212,-1.4975367919760958,1.8106601717798212),Vector(0.0,0.5610787981448637,-0.10355339059327373,0.014866809917876145,2.353553390593274,-1.4485215377304426,-2.603553390593274,1.847690450496545,0.0)),
+    Case("signed_window",Vector(1.0,2.0,3.0,4.0),Vector(-1.0,-1.0,-1.0,-1.0),4,Detrend.None,StftScaling.Magnitude,Vector(-2.5,0.5,0.5),Vector(0.0,-0.5,0.0)),
+    Case("zero_coherent",Vector(1.0,2.0,3.0,4.0),Vector(1.0,-1.0,1.0,-1.0),5,Detrend.None,StftScaling.Density,Vector(-0.25,0.14887287570313157,0.28862712429686843),Vector(0.0,-0.27654796668212556,0.9791207648313776)),
+    Case("tiny_window",Vector(1.0,-2.0,3.0,4.0),Vector(1e-150,1e-150,1e-150,1e-150),8,Detrend.None,StftScaling.Density,Vector(0.75,-0.4053300858899107,-0.25,0.6553300858899107,0.25),Vector(0.0,-0.5517766952966369,0.75,0.19822330470336316,0.0)),
+    Case("large_window",Vector(1.0,-2.0,3.0,4.0),Vector(1e+150,1e+150,1e+150,1e+150),8,Detrend.None,StftScaling.Magnitude,Vector(1.5,-0.8106601717798214,-0.5,1.3106601717798214,0.5),Vector(0.0,-1.1035533905932737,1.5,0.3964466094067263,0.0)),
+    Case("large_input",Vector(1e+150,-2e+150,2.9999999999999998e+150,4e+150),Vector(1.0,1.0,1.0,1.0),7,Detrend.None,StftScaling.Density,Vector(7.499999999999999e+149,-5.648022346495107e+149,1.545118089550382e+149,4.727904256944725e+149),Vector(0.0,-3.870819660099554e+149,7.97354121448555e+149,-8.58062153860112e+148)),
+    Case("singleton",Vector(2.0),Vector(1.0),1,Detrend.None,StftScaling.Density,Vector(0.5),Vector(0.0)),
+    Case("tone_no_doubling",Vector(1.0,0.7071067811865476,6.123233995736766e-17,-0.7071067811865475,-1.0,-0.7071067811865477,-1.8369701987210297e-16,0.7071067811865475),Vector(1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0),8,Detrend.None,StftScaling.Magnitude,Vector(-2.918587279715637e-17,0.5,1.5308084989341912e-17,0.0,-1.4302971815274553e-18),Vector(0.0,-8.612732120994166e-17,1.3877787807814457e-17,-2.4894981252573997e-17,0.0))
+  )

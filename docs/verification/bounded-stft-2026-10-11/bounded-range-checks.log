@@ -1,0 +1,44 @@
+range commands ["/tmp/ephys4s-bootstrap/jdk25/jdk-25.0.4.1+1/Contents/Home/bin/java", "-Xmx2g", "-XX:ActiveProcessorCount=4", "-Dsbt.supershell=false", "-Dsbt.log.noformat=true", "-Dsbt.global.base=/Users/bbuchsbaum/code/ephys4s/.build-cache/sbt-global", "-Dsbt.boot.directory=/Users/bbuchsbaum/code/ephys4s/.build-cache/sbt-boot", "-Dsbt.ivy.home=/Users/bbuchsbaum/code/ephys4s/.build-cache/ivy", "-Dsbt.override.build.repos=true", "-Dsbt.repository.config=/Users/bbuchsbaum/code/ephys4s/project/repositories", "--add-modules=jdk.incubator.vector", "--enable-native-access=ALL-UNNAMED", "-jar", "/Users/bbuchsbaum/code/ephys4s/.build-cache/launcher/sbt-launch-1.11.7.jar", "fftJVM/testOnly signal4s.fft.BoundedStftSuite signal4s.fft.BoundedStftParitySuite", "fftJS/testOnly signal4s.fft.BoundedStftSuite signal4s.fft.BoundedStftParitySuite"]
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by scala.runtime.LazyVals$ (file:/Users/bbuchsbaum/code/ephys4s/.build-cache/launcher/sbt-launch-1.11.7.jar)
+WARNING: Please consider reporting this to the maintainers of class scala.runtime.LazyVals$
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+[info] welcome to sbt 1.11.7 (Eclipse Adoptium Java 25.0.4.1)
+[info] loading settings for project signal-stft-owned-build from plugins.sbt...
+[info] loading project definition from /Users/bbuchsbaum/code/ephys4s/.providers/signal-stft-owned/project
+[info] loading settings for project root from build.sbt...
+[info] loading settings for project gale-build from plugins.sbt...
+[info] loading project definition from /Users/bbuchsbaum/code/ephys4s/.build-cache/sbt-global/staging/59a337dc212c15c38c14/gale/project
+[info] loading settings for project root from build.sbt...
+[info] loading settings for project ravel-build from plugins.sbt...
+[info] loading project definition from /Users/bbuchsbaum/code/ephys4s/.build-cache/sbt-global/staging/6c77ef03ad5f6b5be136/ravel/project
+[info] loading settings for project root from build.sbt...
+[info] resolving key references (42588 settings) ...
+[info] set current project to signal4s (in build file:/Users/bbuchsbaum/code/ephys4s/.providers/signal-stft-owned/)
+[info] compiling 1 Scala source to /Users/bbuchsbaum/code/ephys4s/.providers/signal-stft-owned/modules/fft/jvm/target/scala-3.7.4/test-classes ...
+[info] done compiling
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by scala.runtime.LazyVals$ (file:/Users/bbuchsbaum/code/ephys4s/.build-cache/coursier/https/repo.maven.apache.org/maven2/org/scala-lang/scala3-library_3/3.7.4/scala3-library_3-3.7.4.jar)
+WARNING: Please consider reporting this to the maintainers of class scala.runtime.LazyVals$
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+Test run signal4s.fft.BoundedStftSuite started
+signal4s.fft.BoundedStftSuite: finished 0.155s
+Test run signal4s.fft.BoundedStftSuite finished: 0 failed, 0 ignored, 11 total 0.174s
+Test run signal4s.fft.BoundedStftParitySuite started
+signal4s.fft.BoundedStftParitySuite: finished 0.015s
+Test run signal4s.fft.BoundedStftParitySuite finished: 0 failed, 0 ignored, 1 total 0.015s
+[info] Passed: Total 12, Failed 0, Errors 0, Passed 12
+[success] Total time: 5 s, completed Oct 10, 2026, 11:10:19 p.m.
+[info] compiling 1 Scala source to /Users/bbuchsbaum/code/ephys4s/.providers/signal-stft-owned/modules/fft/js/target/scala-3.7.4/test-classes ...
+[info] done compiling
+[info] Fast optimizing /Users/bbuchsbaum/code/ephys4s/.providers/signal-stft-owned/modules/fft/js/target/scala-3.7.4/signal4s-fft-test-fastopt
+Test run signal4s.fft.BoundedStftSuite started
+signal4s.fft.BoundedStftSuite: finished 0.024s
+Test run signal4s.fft.BoundedStftSuite finished: 0 failed, 0 ignored, 11 total 0.024s
+Test run signal4s.fft.BoundedStftParitySuite started
+signal4s.fft.BoundedStftParitySuite: finished 0.005s
+Test run signal4s.fft.BoundedStftParitySuite finished: 0 failed, 0 ignored, 1 total 0.005s
+[info] Passed: Total 12, Failed 0, Errors 0, Passed 12
+[success] Total time: 7 s, completed Oct 10, 2026, 11:10:26 p.m.
