@@ -1,0 +1,60 @@
+{
+  "status": "passed",
+  "base_revision": "4a1e539214afc880effe5bb31054b56db98a22a1",
+  "locked_consumer_revision": "8821b1a11a66cb384f8bc66cb70cea0391e6c621",
+  "issue": "https://github.com/canardlapin/signal4s/issues/19",
+  "platforms": {
+    "JVM": "JDK25.0.4.1/macOS x86_64",
+    "JS": "Node24.21.0/macOS x86_64",
+    "Scala": "3.7.4",
+    "Linux": "local skipped; CI pending"
+  },
+  "full_fft_checks": {
+    "JVM": 152,
+    "JS": 118,
+    "failed": 0,
+    "ignored": 0,
+    "includes_ephys_spectral_contract": 12
+  },
+  "final_range_checks": {
+    "JVM": 12,
+    "JS": 12,
+    "analytical_cases": 11,
+    "golden_suite_cases": 12,
+    "failed": 0,
+    "ignored": 0
+  },
+  "reference": {
+    "SciPy": "1.18.1",
+    "NumPy": "2.3.5",
+    "cases": 12,
+    "relative_tolerance": 1e-10,
+    "absolute_floor": 1e-300,
+    "phase": "phase_shift=None",
+    "sides": "onesided, no folding"
+  },
+  "periodogram_compatibility": {
+    "cases": 60,
+    "status": "bit_identical",
+    "locked_sha256": "8c37a9829018a6f0881e60b62f096f00a8800a2637e8b6cce91ef932ea2f7525",
+    "candidate_sha256": "8c37a9829018a6f0881e60b62f096f00a8800a2637e8b6cce91ef932ea2f7525"
+  },
+  "sources": {
+    "modules/fft/shared/src/main/scala/signal4s/fft/BoundedStftPlan.scala": "10e0f395d8b1b88c0dae9c7bae2b4190255fb431303d29d2ad871d9b021dcdc2",
+    "modules/fft/shared/src/main/scala/signal4s/fft/OwnedFrameFft.scala": "07f70baed398e5501858e5b11a91f87ad26c56f552a7db9075e553f716d4142c",
+    "modules/fft/shared/src/main/scala/signal4s/fft/BoundedPeriodogramPlan.scala": "13b626ee9172ee0d9ce801dfc2ee64600126fdddd8dbf4d1b29093309dfde6a2",
+    "modules/fft/shared/src/test/scala/signal4s/fft/BoundedStftSuite.scala": "2478504058b996394c19cf74d08dbc4c0f6e3f01a5a1dbd225163f1d868aa486",
+    "modules/fft/shared/src/test/scala/signal4s/fft/BoundedStftParitySuite.scala": "229ab27fb8647bb71a000808cca3468a98063bfffb64b62fb89d2d0e1ff23116",
+    "modules/fft/shared/src/test/scala/signal4s/fft/BoundedStftGoldens.scala": "20ad01317d21a49cd0c91de897c9eb8f671cf0099ec90bc5bb16e9ea8e9c2431",
+    "fixtures/data/bounded-stft-v1.json": "31c53eefee51f06b4ed772561b818ce8a90c20984a693912187156a6fef8d45d",
+    "fixtures/generate/generate_bounded_stft.py": "01d8cbce33b130a550b38f8fd381e77d3e7803fbff088937028bf2555a95746c"
+  },
+  "logs": {
+    "bounded-provider-qualification-fixed.log": "88280523d187a823159c01b88826541b4cafb377df26b4e37b9a11fbc05eea2c",
+    "bounded-range-checks.log": "72535792a448621007fb5551528bb399ef2373bc08be3228610225fc6d327b81",
+    "bounded-golden-generation.log": "92a2b34a63c83d8f55aab15275cdef2c981abfe5500d5509754dc27a620c2ed2",
+    "periodogram-locked.f64bits.txt": "8c37a9829018a6f0881e60b62f096f00a8800a2637e8b6cce91ef932ea2f7525",
+    "periodogram-candidate.f64bits.txt": "8c37a9829018a6f0881e60b62f096f00a8800a2637e8b6cce91ef932ea2f7525"
+  },
+  "claim": "owned numerical analysis capability and reference/engineering agreement; no consumer time-frequency/scientific/synthesis/performance qualification"
+}

@@ -1,0 +1,205 @@
+locked qualified command ["/tmp/ephys4s-bootstrap/jdk25/jdk-25.0.4.1+1/Contents/Home/bin/java", "-Xmx2g", "-XX:ActiveProcessorCount=4", "-Dsbt.supershell=false", "-Dsbt.log.noformat=true", "-Dsbt.global.base=/Users/bbuchsbaum/code/ephys4s/.build-cache/sbt-global", "-Dsbt.boot.directory=/Users/bbuchsbaum/code/ephys4s/.build-cache/sbt-boot", "-Dsbt.ivy.home=/Users/bbuchsbaum/code/ephys4s/.build-cache/ivy", "-Dsbt.override.build.repos=true", "-Dsbt.repository.config=/Users/bbuchsbaum/code/ephys4s/project/repositories", "--add-modules=jdk.incubator.vector", "--enable-native-access=ALL-UNNAMED", "-jar", "/Users/bbuchsbaum/code/ephys4s/.build-cache/launcher/sbt-launch-1.11.7.jar", "set fftJVM / Test / unmanagedSources += file(\"/Users/bbuchsbaum/code/ephys4s/modules/testkit/shared/src/test/scala/ephys4s/probes/signal/SpectralContractsSuite.scala\")", "set fftJS / Test / unmanagedSources += file(\"/Users/bbuchsbaum/code/ephys4s/modules/testkit/shared/src/test/scala/ephys4s/probes/signal/SpectralContractsSuite.scala\")", "fftJVM/test", "fftJS/test"]
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by scala.runtime.LazyVals$ (file:/Users/bbuchsbaum/code/ephys4s/.build-cache/launcher/sbt-launch-1.11.7.jar)
+WARNING: Please consider reporting this to the maintainers of class scala.runtime.LazyVals$
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+[info] welcome to sbt 1.11.7 (Eclipse Adoptium Java 25.0.4.1)
+[info] loading settings for project signal-stft-owned-build from plugins.sbt...
+[info] loading project definition from /Users/bbuchsbaum/code/ephys4s/.providers/signal-stft-owned/project
+[info] loading settings for project root from build.sbt...
+[info] loading settings for project gale-build from plugins.sbt...
+[info] loading project definition from /Users/bbuchsbaum/code/ephys4s/.build-cache/sbt-global/staging/59a337dc212c15c38c14/gale/project
+[info] loading settings for project root from build.sbt...
+[info] loading settings for project ravel-build from plugins.sbt...
+[info] loading project definition from /Users/bbuchsbaum/code/ephys4s/.build-cache/sbt-global/staging/6c77ef03ad5f6b5be136/ravel/project
+[info] loading settings for project root from build.sbt...
+[info] resolving key references (42588 settings) ...
+[info] set current project to signal4s (in build file:/Users/bbuchsbaum/code/ephys4s/.providers/signal-stft-owned/)
+[info] Defining fftJVM / Test / unmanagedSources
+[info] The new value will be used by fftJVM / Test / bspBuildTargetSourcesItem, fftJVM / Test / sources
+[info] Reapplying settings...
+[info] set current project to signal4s (in build file:/Users/bbuchsbaum/code/ephys4s/.providers/signal-stft-owned/)
+[info] Defining fftJS / Test / unmanagedSources
+[info] The new value will be used by fftJS / Test / bspBuildTargetSourcesItem, fftJS / Test / sources
+[info] Reapplying settings...
+[info] set current project to signal4s (in build file:/Users/bbuchsbaum/code/ephys4s/.providers/signal-stft-owned/)
+[info] compiling 5 Scala sources to /Users/bbuchsbaum/code/ephys4s/.providers/signal-stft-owned/modules/fft/jvm/target/scala-3.7.4/test-classes ...
+[info] done compiling
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by scala.runtime.LazyVals$ (file:/Users/bbuchsbaum/code/ephys4s/.build-cache/coursier/https/repo.maven.apache.org/maven2/org/scala-lang/scala3-library_3/3.7.4/scala3-library_3-3.7.4.jar)
+WARNING: Please consider reporting this to the maintainers of class scala.runtime.LazyVals$
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+Test run signal4s.fft.AutoConvolutionPlanSuite started
+signal4s.fft.AutoConvolutionPlanSuite: finished 0.188s
+Test run signal4s.fft.AutoConvolutionPlanSuite finished: 0 failed, 0 ignored, 2 total 0.208s
+Test run signal4s.fft.StockhamParitySuite started
+signal4s.fft.StockhamParitySuite: finished 0.05s
+Test run signal4s.fft.StockhamParitySuite finished: 0 failed, 0 ignored, 2 total 0.05s
+Test run signal4s.fft.MixedRadixParitySuite started
+signal4s.fft.MixedRadixParitySuite: finished 0.208s
+Test run signal4s.fft.MixedRadixParitySuite finished: 0 failed, 0 ignored, 2 total 0.208s
+Test run signal4s.fft.ScipyWelchParitySuite started
+signal4s.fft.ScipyWelchParitySuite: finished 0.097s
+Test run signal4s.fft.ScipyWelchParitySuite finished: 0 failed, 0 ignored, 3 total 0.098s
+Test run signal4s.fft.WelchFiniteSuite started
+signal4s.fft.WelchFiniteSuite: finished 0.003s
+Test run signal4s.fft.WelchFiniteSuite finished: 0 failed, 0 ignored, 2 total 0.004s
+Test run signal4s.fft.ScipyWindowParitySuite started
+signal4s.fft.ScipyWindowParitySuite: finished 0.012s
+Test run signal4s.fft.ScipyWindowParitySuite finished: 0 failed, 0 ignored, 8 total 0.012s
+Test run signal4s.fft.FftDirectParitySuite started
+signal4s.fft.FftDirectParitySuite: finished 0.029s
+Test run signal4s.fft.FftDirectParitySuite finished: 0 failed, 0 ignored, 2 total 0.029s
+Test run signal4s.fft.ScipyFftConvolveParitySuite started
+signal4s.fft.ScipyFftConvolveParitySuite: finished 0.007s
+Test run signal4s.fft.ScipyFftConvolveParitySuite finished: 0 failed, 0 ignored, 5 total 0.008s
+Test run signal4s.fft.ScipyE2eParitySuite started
+signal4s.fft.ScipyE2eParitySuite: finished 0.026s
+Test run signal4s.fft.ScipyE2eParitySuite finished: 0 failed, 0 ignored, 1 total 0.026s
+Test run signal4s.fft.FastFftLengthSuite started
+signal4s.fft.FastFftLengthSuite: finished 0.006s
+Test run signal4s.fft.FastFftLengthSuite finished: 0 failed, 0 ignored, 4 total 0.006s
+Test run ephys4s.probes.signal.SpectralContractsSuite started
+ephys4s.probes.signal.SpectralContractsSuite: finished 0.036s
+Test run ephys4s.probes.signal.SpectralContractsSuite finished: 0 failed, 0 ignored, 12 total 0.036s
+Test run signal4s.fft.PackedRealFftSuite started
+signal4s.fft.PackedRealFftSuite: finished 0.008s
+Test run signal4s.fft.PackedRealFftSuite finished: 0 failed, 0 ignored, 4 total 0.008s
+Test run signal4s.fft.StftExtentCoverageSuite started
+signal4s.fft.StftExtentCoverageSuite: finished 0.033s
+Test run signal4s.fft.StftExtentCoverageSuite finished: 0 failed, 0 ignored, 8 total 0.033s
+Test run signal4s.fft.ComplexVectorSuite started
+signal4s.fft.ComplexVectorSuite: finished 0.01s
+Test run signal4s.fft.ComplexVectorSuite finished: 0 failed, 0 ignored, 4 total 0.011s
+Test run signal4s.fft.BoundedPeriodogramSuite started
+signal4s.fft.BoundedPeriodogramSuite: finished 0.05s
+Test run signal4s.fft.BoundedPeriodogramSuite finished: 0 failed, 0 ignored, 16 total 0.05s
+Test run signal4s.fft.StftContractSuite started
+signal4s.fft.StftContractSuite: finished 0.006s
+Test run signal4s.fft.StftContractSuite finished: 0 failed, 0 ignored, 3 total 0.007s
+Test run signal4s.fft.FftStructureSuite started
+signal4s.fft.FftStructureSuite: finished 0.015s
+Test run signal4s.fft.FftStructureSuite finished: 0 failed, 0 ignored, 6 total 0.015s
+Test run signal4s.fft.FftConvolutionPlanSuite started
+signal4s.fft.FftConvolutionPlanSuite: finished 0.012s
+Test run signal4s.fft.FftConvolutionPlanSuite finished: 0 failed, 0 ignored, 5 total 0.012s
+Test run signal4s.fft.SpectralEdgeSuite started
+signal4s.fft.SpectralEdgeSuite: finished 0.007s
+Test run signal4s.fft.SpectralEdgeSuite finished: 0 failed, 0 ignored, 3 total 0.007s
+Test run signal4s.fft.BoundedStftParitySuite started
+signal4s.fft.BoundedStftParitySuite: finished 0.019s
+Test run signal4s.fft.BoundedStftParitySuite finished: 0 failed, 0 ignored, 1 total 0.02s
+Test run signal4s.fft.FftSuite started
+signal4s.fft.FftSuite: finished 0.004s
+Test run signal4s.fft.FftSuite finished: 0 failed, 0 ignored, 3 total 0.004s
+Test run signal4s.fft.ScipyFftParitySuite started
+signal4s.fft.ScipyFftParitySuite: finished 0.022s
+Test run signal4s.fft.ScipyFftParitySuite finished: 0 failed, 0 ignored, 12 total 0.023s
+Test run signal4s.fft.WindowSuite started
+signal4s.fft.WindowSuite: finished 0.003s
+Test run signal4s.fft.WindowSuite finished: 0 failed, 0 ignored, 2 total 0.003s
+Test run signal4s.fft.RealWorkspaceContractSuite started
+signal4s.fft.RealWorkspaceContractSuite: finished 0.003s
+Test run signal4s.fft.RealWorkspaceContractSuite finished: 0 failed, 0 ignored, 2 total 0.003s
+Test run signal4s.fft.SpectralBoundarySuite started
+signal4s.fft.SpectralBoundarySuite: finished 0.006s
+Test run signal4s.fft.SpectralBoundarySuite finished: 0 failed, 0 ignored, 4 total 0.006s
+Test run signal4s.fft.internal.PlatformFftSuite started
+signal4s.fft.internal.PlatformFftSuite: finished 0.026s
+Test run signal4s.fft.internal.PlatformFftSuite finished: 0 failed, 0 ignored, 3 total 0.026s
+Test run signal4s.fft.BoundedStftSuite started
+signal4s.fft.BoundedStftSuite: finished 0.026s
+Test run signal4s.fft.BoundedStftSuite finished: 0 failed, 0 ignored, 10 total 0.026s
+Test run signal4s.fft.ScipyStftParitySuite started
+signal4s.fft.ScipyStftParitySuite: finished 0.013s
+Test run signal4s.fft.ScipyStftParitySuite finished: 0 failed, 0 ignored, 1 total 0.013s
+Test run signal4s.fft.CircularFftSuite started
+signal4s.fft.CircularFftSuite: finished 0.008s
+Test run signal4s.fft.CircularFftSuite finished: 0 failed, 0 ignored, 3 total 0.008s
+Test run signal4s.fft.KaiserPrecisionSuite started
+signal4s.fft.KaiserPrecisionSuite: finished 0.007s
+Test run signal4s.fft.KaiserPrecisionSuite finished: 0 failed, 0 ignored, 19 total 0.007s
+[info] Passed: Total 152, Failed 0, Errors 0, Passed 152
+[success] Total time: 7 s, completed Oct 10, 2026, 11:01:46 p.m.
+[info] compiling 3 Scala sources to /Users/bbuchsbaum/code/ephys4s/.providers/signal-stft-owned/modules/fft/js/target/scala-3.7.4/classes ...
+[info] done compiling
+[info] compiling 4 Scala sources to /Users/bbuchsbaum/code/ephys4s/.providers/signal-stft-owned/modules/fft/js/target/scala-3.7.4/test-classes ...
+[info] done compiling
+[info] Fast optimizing /Users/bbuchsbaum/code/ephys4s/.providers/signal-stft-owned/modules/fft/js/target/scala-3.7.4/signal4s-fft-test-fastopt
+Test run signal4s.fft.StockhamParitySuite started
+signal4s.fft.StockhamParitySuite: finished 0.032s
+Test run signal4s.fft.StockhamParitySuite finished: 0 failed, 0 ignored, 2 total 0.032s
+Test run signal4s.fft.MixedRadixParitySuite started
+signal4s.fft.MixedRadixParitySuite: finished 0.302s
+Test run signal4s.fft.MixedRadixParitySuite finished: 0 failed, 0 ignored, 2 total 0.302s
+Test run signal4s.fft.WelchFiniteSuite started
+signal4s.fft.WelchFiniteSuite: finished 0.008s
+Test run signal4s.fft.WelchFiniteSuite finished: 0 failed, 0 ignored, 2 total 0.008s
+Test run signal4s.fft.FftDirectParitySuite started
+signal4s.fft.FftDirectParitySuite: finished 0.032s
+Test run signal4s.fft.FftDirectParitySuite finished: 0 failed, 0 ignored, 2 total 0.032s
+Test run signal4s.fft.FastFftLengthSuite started
+signal4s.fft.FastFftLengthSuite: finished 0.002s
+Test run signal4s.fft.FastFftLengthSuite finished: 0 failed, 0 ignored, 4 total 0.002s
+Test run ephys4s.probes.signal.SpectralContractsSuite started
+ephys4s.probes.signal.SpectralContractsSuite: finished 0.015s
+Test run ephys4s.probes.signal.SpectralContractsSuite finished: 0 failed, 0 ignored, 12 total 0.015s
+Test run signal4s.fft.PackedRealFftSuite started
+signal4s.fft.PackedRealFftSuite: finished 0.003s
+Test run signal4s.fft.PackedRealFftSuite finished: 0 failed, 0 ignored, 4 total 0.003s
+Test run signal4s.fft.StftExtentCoverageSuite started
+signal4s.fft.StftExtentCoverageSuite: finished 0.007s
+Test run signal4s.fft.StftExtentCoverageSuite finished: 0 failed, 0 ignored, 8 total 0.007s
+Test run signal4s.fft.ComplexVectorSuite started
+signal4s.fft.ComplexVectorSuite: finished 0.002s
+Test run signal4s.fft.ComplexVectorSuite finished: 0 failed, 0 ignored, 4 total 0.002s
+Test run signal4s.fft.BoundedPeriodogramSuite started
+signal4s.fft.BoundedPeriodogramSuite: finished 0.037s
+Test run signal4s.fft.BoundedPeriodogramSuite finished: 0 failed, 0 ignored, 16 total 0.037s
+Test run signal4s.fft.StftContractSuite started
+signal4s.fft.StftContractSuite: finished 0.001s
+Test run signal4s.fft.StftContractSuite finished: 0 failed, 0 ignored, 3 total 0.001s
+Test run signal4s.fft.FftStructureSuite started
+signal4s.fft.FftStructureSuite: finished 0.002s
+Test run signal4s.fft.FftStructureSuite finished: 0 failed, 0 ignored, 6 total 0.002s
+Test run signal4s.fft.FftConvolutionPlanSuite started
+signal4s.fft.FftConvolutionPlanSuite: finished 0.002s
+Test run signal4s.fft.FftConvolutionPlanSuite finished: 0 failed, 0 ignored, 5 total 0.002s
+Test run signal4s.fft.SpectralEdgeSuite started
+signal4s.fft.SpectralEdgeSuite: finished 0.001s
+Test run signal4s.fft.SpectralEdgeSuite finished: 0 failed, 0 ignored, 3 total 0.001s
+Test run signal4s.fft.BoundedStftParitySuite started
+signal4s.fft.BoundedStftParitySuite: finished 0.005s
+Test run signal4s.fft.BoundedStftParitySuite finished: 0 failed, 0 ignored, 1 total 0.005s
+Test run signal4s.fft.FftSuite started
+signal4s.fft.FftSuite: finished 0.001s
+Test run signal4s.fft.FftSuite finished: 0 failed, 0 ignored, 3 total 0.001s
+Test run signal4s.fft.WindowSuite started
+signal4s.fft.WindowSuite: finished 0.001s
+Test run signal4s.fft.WindowSuite finished: 0 failed, 0 ignored, 2 total 0.001s
+Test run signal4s.fft.RealWorkspaceContractSuite started
+signal4s.fft.RealWorkspaceContractSuite: finished 0.001s
+Test run signal4s.fft.RealWorkspaceContractSuite finished: 0 failed, 0 ignored, 2 total 0.001s
+Test run signal4s.fft.SpectralBoundarySuite started
+signal4s.fft.SpectralBoundarySuite: finished 0.001s
+Test run signal4s.fft.SpectralBoundarySuite finished: 0 failed, 0 ignored, 4 total 0.001s
+Test run signal4s.fft.internal.PlatformFftSuite started
+signal4s.fft.internal.PlatformFftSuite: finished 0.001s
+Test run signal4s.fft.internal.PlatformFftSuite finished: 0 failed, 0 ignored, 1 total 0.001s
+Test run signal4s.fft.BoundedStftSuite started
+signal4s.fft.BoundedStftSuite: finished 0.006s
+Test run signal4s.fft.BoundedStftSuite finished: 0 failed, 0 ignored, 10 total 0.006s
+Test run signal4s.fft.CircularFftSuite started
+signal4s.fft.CircularFftSuite: finished 0.003s
+Test run signal4s.fft.CircularFftSuite finished: 0 failed, 0 ignored, 3 total 0.003s
+Test run signal4s.fft.KaiserPrecisionSuite started
+signal4s.fft.KaiserPrecisionSuite: finished 0.005s
+Test run signal4s.fft.KaiserPrecisionSuite finished: 0 failed, 0 ignored, 19 total 0.005s
+[info] Passed: Total 118, Failed 0, Errors 0, Passed 118
+[success] Total time: 10 s, completed Oct 10, 2026, 11:01:56 p.m.
+full suites passed
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: Using incubator modules: jdk.incubator.vector
+60 old/candidate periodograms bit-identical
