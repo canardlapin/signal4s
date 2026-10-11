@@ -21,7 +21,11 @@ final class StftPlan private (
   def frameLength: Int = frames.frameLength
 
   def analyze(signal: DVec): Either[SignalError, TimeFrequency] =
-    val nFrames = frames.frameCount(signal.length)
+    val nFrames = frames.frameCountChecked(signal.length.toLong) match
+      case Left(error) => return Left(error)
+      case Right(count) if count > Int.MaxValue =>
+        return Left(SignalError.NumericalFailure("StftPlan.analyze", "frame count exceeds Int output capacity"))
+      case Right(count) => count.toInt
     if nFrames == 0 then
       Left(SignalError.NumericalFailure("StftPlan.analyze", "no frames for signal length"))
     else
@@ -44,7 +48,8 @@ final class StftPlan private (
         case Some(e) => Left(e)
         case None =>
           for
-            times <- TimeAxis.fromFrames(nFrames, hop, sampleRate)
+            times <- TimeAxis.fromFrames(nFrames, hop, sampleRate,
+              (frames.firstFrameStart.toLong + frameLength / 2).toDouble)
             freqs <- FrequencyAxis.realFft(nfft, sampleRate)
             tf <- TimeFrequency(cols.result(), times, freqs, nfft, onesided = true)
           yield tf

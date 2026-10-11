@@ -27,14 +27,26 @@ final case class FramePlan private (
   def frameCount(signalLength: Int): Int =
     if signalLength <= 0 then 0
     else
-      val start0 = firstFrameStart
-      // last frame index p with start0 + p*hop < signalLength
-      val raw = signalLength - start0
-      if raw <= 0 then 0
-      else (raw + hop - 1) / hop
+      // Legacy Int result is checked; use frameCountChecked for typed Long extents.
+      val raw = signalLength.toLong - firstFrameStart.toLong
+      java.lang.Math.toIntExact((raw + hop - 1L) / hop)
+
+  /** Long extent inspection without input allocation or overflowing intermediate arithmetic. */
+  def frameCountChecked(signalLength: Long): Either[SignalError, Long] =
+    if signalLength < 0 then Left(SignalError.NumericalFailure("FramePlan.extent", "negative signal length"))
+    else if signalLength == 0 then Right(0L)
+    else
+      val count = (BigInt(signalLength) - firstFrameStart + hop - 1) / hop
+      if count.isValidLong then Right(count.toLong)
+      else Left(SignalError.NumericalFailure("FramePlan.extent", "frame count exceeds Long capacity"))
 
   def frameStart(frameIndex: Int): Int =
-    firstFrameStart + frameIndex * hop
+    java.lang.Math.toIntExact(firstFrameStart.toLong + frameIndex.toLong * hop)
+
+  def frameStartChecked(frameIndex: Long): Either[SignalError, Long] =
+    val start = BigInt(firstFrameStart) + BigInt(frameIndex) * hop
+    if start.isValidLong then Right(start.toLong)
+    else Left(SignalError.NumericalFailure("FramePlan.extent", "frame start exceeds Long capacity"))
 
   /** Extract one framed, windowed block (length = frameLength). */
   def extract(

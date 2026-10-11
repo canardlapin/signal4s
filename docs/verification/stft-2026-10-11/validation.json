@@ -1,0 +1,51 @@
+{
+  "status": "passed",
+  "baseline_revision": "8821b1a11a66cb384f8bc66cb70cea0391e6c621",
+  "canonical_main": "0b868a505e3968bba27eb7400b0ad47a2caf0037",
+  "canonical_main_tree_matches_baseline": true,
+  "platform": {
+    "JVM": "Temurin25.0.4.1/macOS x86_64",
+    "Scala.js": "Node24.21.0/macOS x86_64",
+    "Scala": "3.7.4",
+    "Linux": "skipped/not available"
+  },
+  "targeted": {
+    "JVM": 17,
+    "JS": 17
+  },
+  "full": {
+    "fftJVM": 141,
+    "fftJS": 107,
+    "lawsJVM": 2,
+    "lawsJS": 2,
+    "failed": 0,
+    "ignored": 0
+  },
+  "affected_consumer": {
+    "path": "modules/testkit/shared/src/test/scala/ephys4s/probes/signal/SpectralContractsSuite.scala",
+    "sha256": "7d5be82e3dc4f3f5190ae27bb49390d35dfd5dd65dc9511ab21446719dbcf01e",
+    "JVM": 12,
+    "JS": 12,
+    "included_in_fft_totals": true,
+    "injection": "explicit Test/unmanagedSources points to exact consumer source; no dependency pin/sibling resolution changes"
+  },
+  "sources": {
+    "modules/fft/shared/src/main/scala/signal4s/fft/CanonicalDual.scala": "d4ab3cc80de1637c92170a3c67f59f255e71a67b34112430cbf96da3c755f93f",
+    "modules/fft/shared/src/main/scala/signal4s/fft/FramePlan.scala": "71f6120751f5d899bfa93b2a589b7ee8e6b7d12dc8f613c61a126d87b0e7dc47",
+    "modules/fft/shared/src/main/scala/signal4s/fft/StftPlan.scala": "8ce430495b54261d3ec67584924d8a56093a3cbd358bb189229755e87e673a4b",
+    "modules/fft/shared/src/test/scala/signal4s/fft/StftExtentCoverageSuite.scala": "fd0c3780d300011826214ba7e57dbb66025a902f3b5b5896155ea30892fedbbf",
+    "modules/fft/jvm/src/test/scala/signal4s/fft/StftConsumerProbe.scala": "9fc2e8f4c8147903099ae5fff229bf130c339df33d04bcc4fad11357a41f3a3e"
+  },
+  "reference_fixtures": {
+    "fixtures/data/smoke/smoke.e2e_butter_welch.json": "caae3e1b314be0242b676d4d221aba6f6742ada052b7d36f5f202389122e96ab",
+    "fixtures/data/smoke/smoke.stft_hann_periodic_hop16.json": "ded52cb2dfed7765141d0224128c615c9da6eaadf3ce6304f040714d3fdd03b5",
+    "fixtures/data/smoke/smoke.welch_density_nodetrend.json": "f504ef23c82d7a420537e355bb4917b2f0dabf78aa10df353dfd4c88a6e24c14",
+    "fixtures/data/smoke/smoke.welch_spectrum_detrend_mean.json": "fab967f3d36585970556d93d3d54932be5d63f0ef3d3aefa2197eca6536bff3e"
+  },
+  "logs": {
+    "provider-baseline-owned-checkout.log": "160d3e96c08102818674dd18a98e9c053387da86b0d41a81c54be6d18345f9b0",
+    "provider-legacy-regressions.log": "98ac28f69cc5b5fc8d5d78b4ba2e7425317efe602c1b6428b3d95546c6949513",
+    "provider-full-consumer-checks.log": "28d597ee2520580f43c214e89c4f0b405893e0e3cf04d78e1e03e92c9cbc6530"
+  },
+  "claims": "engineering/independent reference matching only; no scientific/performance/general synthesis superiority claim"
+}
