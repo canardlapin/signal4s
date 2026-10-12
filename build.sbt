@@ -45,7 +45,7 @@ addCommandAlias(
 // development must opt into a checkout through the explicit system property;
 // merely placing a sibling directory beside this repository changes nothing.
 // Maven Central publication of gale-core is not assumed yet.
-lazy val galeRevision = "6f7a1f9509a07c2b3f5b956332d39a1bc5b64c3c"
+lazy val galeRevision = "be709f1e2458e6b58e902862f9e868c4da27e4fe"
 lazy val galeBuild: java.net.URI =
   sys.props
     .get("signal4s.gale.build")
