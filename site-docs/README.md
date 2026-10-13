@@ -24,6 +24,8 @@ gate, not a Scala.js proof.
    immutable plans with single-owner workspaces.
 6. [Multichannel guide](guides/multichannel.md) — apply 1-D operations along a
    matrix axis with the optional Ravel module.
+7. [Bounded spectral estimators](guides/bounded-spectral.md) — construct
+   common-window cross spectra and finite-support Morlet coefficients.
 
 ## Reference
 
