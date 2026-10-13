@@ -3,7 +3,9 @@ package signal4s.filter
 import gale.linalg.{DVec, MutableDVec}
 import signal4s.*
 
-/** Primitive numerical payloads, excluding caller input/destination and object/GC/RSS overhead. */
+/** Primitive numerical payloads, excluding caller input/destination and object/GC/RSS overhead.
+  * Scratch is retained by a runner; use its largest admitted input length for `samples`.
+  */
 final case class FirResources(coefficientBytes: BigInt,stateBytes: BigInt,snapshotBytes: BigInt):
   def processIntoScratchBytes(samples: Int): Either[SignalError,BigInt] =
     if samples<0 then Left(SignalError.InvalidInputLength(samples)) else Right(stateBytes+BigInt(samples)*8)
@@ -59,12 +61,27 @@ object Fir:
   def causal(taps: DVec): Either[SignalError, Fir] =
     Kernel.causal(taps).flatMap(apply)
 
-/** Single-owner FIR runner (DF-II transposed). Not thread-safe. */
+/** Single-owner FIR runner (DF-II transposed). Not thread-safe.
+  * Transactional scratch grows to the largest processed input, then is reused.
+  * A failed call never publishes a prefix or changes the committed delay state.
+  */
 final class FirRunner private (
     val fir: Fir,
     private val state: Array[Double]
 ):
+  private val next = new Array[Double](state.length)
+  private var staged = Array.emptyDoubleArray
+
   def stateLength: Int = fir.stateLength
+  def workspaceSamples: Int = staged.length
+  def retainedScratchBytes: BigInt = (BigInt(next.length) + staged.length) * 8
+
+  private def finiteState(values: Array[Double]): Boolean =
+    var i = 0
+    while i < values.length do
+      if !values(i).isFinite then return false
+      i += 1
+    true
 
   def process(input: DVec): Either[SignalError, DVec] =
     val out = MutableDVec.zeros(input.length)
@@ -75,16 +92,16 @@ final class FirRunner private (
       Left(SignalError.LengthMismatch(input.length, output.length))
     else
       val b = fir.taps
-      if b.length<=0 || !Fir.finite(b) || !state.forall(_.isFinite) || !Fir.finite(input) then
+      if b.length<=0 || !Fir.finite(b) || !finiteState(state) || !Fir.finite(input) then
         Left(SignalError.NumericalFailure("FirRunner","finite coefficients, state and input required"))
       else
-        val next=state.clone()
-        val staged=Array.ofDim[Double](input.length)
+        if staged.length < input.length then staged = new Array[Double](input.length)
+        Array.copy(state, 0, next, 0, state.length)
         var i=0
         var failed=false
         while i<input.length && !failed do
           val y=Df2Transposed.transferStep(b,FirRunner.AOne,input(i),next)
-          if !y.isFinite || !next.forall(_.isFinite) then failed=true else staged(i)=y
+          if !y.isFinite || !finiteState(next) then failed=true else staged(i)=y
           i+=1
         if failed then Left(SignalError.NumericalFailure("FirRunner","output/delay arithmetic exceeds finite capacity"))
         else
