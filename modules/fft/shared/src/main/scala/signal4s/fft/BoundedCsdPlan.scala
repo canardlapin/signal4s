@@ -1,0 +1,143 @@
+package signal4s.fft
+
+import gale.linalg.{DVec, DVecBuilder}
+import gale.numeric.ExactSum
+import signal4s.{SampleRate, SignalError}
+
+/** Primitive payload bound, excluding caller inputs, object headers, GC and RSS. */
+final case class CsdResources(stateBytes: BigInt, scratchBytes: BigInt,
+    outputBytes: BigInt, constructionBytes: BigInt):
+  def peakBytes: BigInt = (stateBytes + scratchBytes + outputBytes).max(constructionBytes)
+
+/** Owned full matrix in ((row * channels + column) * bins + frequency) order.
+  * S(i,j) = mean(conj(X_i) * X_j), one-sided density. No degrees-of-freedom claim.
+  */
+final class CsdMatrix private[fft] (val channels: Int, val binCount: Int,
+    val real: DVec, val imaginary: DVec, val acceptedWindows: Long,
+    val frequencies: FrequencyAxis):
+  def apply(row: Int, column: Int, bin: Int): Complex =
+    require(row >= 0 && row < channels && column >= 0 && column < channels && bin >= 0 && bin < binCount)
+    val index = (row * channels + column) * binCount + bin
+    Complex(real(index), imaginary(index))
+
+/** Common-window estimator; the caller determines which complete windows exist.
+  * A single invalid row refuses the entire frame before any spectral sum changes.
+  */
+final class BoundedCsdPlan private (val channels: Int, val stft: BoundedStftPlan,
+    val resources: CsdResources):
+  val binCount: Int = stft.binCount
+  private[fft] val cells: Int = (channels.toLong * (channels + 1) / 2 * binCount).toInt
+  def newAccumulator(numericBudgetBytes: BigInt): Either[SignalError, CsdAccumulator] =
+    if numericBudgetBytes < resources.peakBytes then Left(BoundedCsdPlan.failure("budget below declared CSD peak"))
+    else stft.newWorkspace(numericBudgetBytes).map(w => new CsdAccumulator(this, w))
+
+object BoundedCsdPlan:
+  private[fft] def failure(message: String): SignalError = SignalError.NumericalFailure("csd", message)
+  val MaxWindows: Long = math.min(ExactSum.MaxTerms, 9007199254740991L)
+
+  def inspect(channels: Int, frameLength: Int, nfft: Int): Either[SignalError, CsdResources] =
+    val bins = BigInt(nfft) / 2 + 1
+    val full = BigInt(channels) * channels * bins
+    val triangle = BigInt(channels) * (channels + 1) / 2 * bins
+    if channels <= 0 || full > Int.MaxValue || triangle > Int.MaxValue then Left(failure("positive bounded matrix shape required"))
+    else BoundedStftPlan.inspect(frameLength, nfft).map: fft =>
+      val exact = ExactSum.resources
+      val state = triangle * 2 * exact.stateBytes
+      val output = full * 16 * 2 // Builders and detached values may coexist.
+      val scratch = triangle * 16 + BigInt(channels) * bins * 32 + fft.peakBytes +
+        exact.ratioScratchBytes + exact.stateBytes
+      CsdResources(state, scratch, output, fft.constructionAdditionalBytes + fft.windowBytes)
+
+  def withinBudget(channels: Int, window: Window, sampleRate: SampleRate, nfft: Int,
+      numericBudgetBytes: BigInt, detrend: Detrend = Detrend.None): Either[SignalError, BoundedCsdPlan] =
+    for
+      resource <- inspect(channels, window.length, nfft)
+      _ <- if resource.peakBytes <= numericBudgetBytes then Right(()) else Left(failure("budget below declared CSD peak"))
+      stft <- BoundedStftPlan.withinBudget(window, sampleRate, nfft, numericBudgetBytes, detrend, StftScaling.Density)
+    yield new BoundedCsdPlan(channels, stft, resource)
+
+/** Single owner; frequency states are fixed-size and a frame commits atomically. */
+final class CsdAccumulator private[fft] (val plan: BoundedCsdPlan, workspace: StftWorkspace):
+  private val real = Array.fill(plan.cells)(ExactSum.zero())
+  private val imaginary = Array.fill(plan.cells)(ExactSum.zero())
+  private val stagedReal = new Array[Double](plan.cells)
+  private val stagedImaginary = new Array[Double](plan.cells)
+  private var count = 0L
+  def acceptedWindows: Long = count
+
+  def accumulateFrame(rows: IndexedSeq[DVec]): Either[SignalError, Unit] =
+    if rows.length != plan.channels then return Left(BoundedCsdPlan.failure("channel count differs from plan"))
+    if count == BoundedCsdPlan.MaxWindows then return Left(BoundedCsdPlan.failure("exact window count capacity exceeded"))
+    val spectra = new Array[ComplexVector](plan.channels)
+    var row = 0
+    while row < plan.channels do
+      plan.stft.analyzeInto(rows(row), workspace) match
+        case Left(error) => return Left(error)
+        case Right(frame) => spectra(row) = frame.bins
+      row += 1
+    var index = 0
+    row = 0
+    while row < plan.channels do
+      var column = row
+      while column < plan.channels do
+        var k = 0
+        while k < plan.binCount do
+          val a = spectra(row); val b = spectra(column)
+          val fold = if k == 0 || (plan.stft.nfft % 2 == 0 && k == plan.binCount - 1) then 1.0 else 2.0
+          val re = (a.real(k) * b.real(k) + a.imaginary(k) * b.imaginary(k)) * fold
+          val im = if row == column then 0.0 else (a.real(k) * b.imaginary(k) - a.imaginary(k) * b.real(k)) * fold
+          if !re.isFinite || !im.isFinite then return Left(BoundedCsdPlan.failure("nonfinite cross-periodogram"))
+          stagedReal(index) = re; stagedImaginary(index) = im
+          index += 1; k += 1
+        column += 1
+      row += 1
+    // Every state receives at most one term per frame. The global exact count
+    // preflight proves all add capacities before this first observable update.
+    index = 0
+    while index < plan.cells do
+      real(index).add(stagedReal(index)).fold(e => throw new IllegalStateException(e.toString), identity)
+      imaginary(index).add(stagedImaginary(index)).fold(e => throw new IllegalStateException(e.toString), identity)
+      index += 1
+    count += 1
+    Right(())
+
+  def merge(other: CsdAccumulator): Either[SignalError, Unit] =
+    if this eq other then Left(BoundedCsdPlan.failure("self merge duplicates observations"))
+    else if plan ne other.plan then Left(BoundedCsdPlan.failure("different plan identity"))
+    else if other.count > BoundedCsdPlan.MaxWindows - count then Left(BoundedCsdPlan.failure("exact window count capacity exceeded"))
+    else
+      var index = 0
+      while index < plan.cells do
+        real(index).addAll(other.real(index)).fold(e => throw new IllegalStateException(e.toString), identity)
+        imaginary(index).addAll(other.imaginary(index)).fold(e => throw new IllegalStateException(e.toString), identity)
+        index += 1
+      count += other.count
+      Right(())
+
+  def finishOwned(): Either[SignalError, Option[CsdMatrix]] =
+    if count == 0 then Right(None)
+    else
+      val denominator = ExactSum.zero()
+      denominator.add(count.toDouble)
+      val length = plan.channels * plan.channels * plan.binCount
+      val outputReal = DVecBuilder.zeros(length)
+      val outputImaginary = DVecBuilder.zeros(length)
+      var index = 0
+      var row = 0
+      while row < plan.channels do
+        var column = row
+        while column < plan.channels do
+          var k = 0
+          while k < plan.binCount do
+            val re = real(index).ratio(denominator).fold(e => throw new IllegalStateException(e.toString), identity)
+            val im = imaginary(index).ratio(denominator).fold(e => throw new IllegalStateException(e.toString), identity)
+            if !re.isFinite || !im.isFinite then return Left(BoundedCsdPlan.failure("nonfinite mean cross spectrum"))
+            val upper = (row * plan.channels + column) * plan.binCount + k
+            val lower = (column * plan.channels + row) * plan.binCount + k
+            outputReal(upper) = re; outputReal(lower) = re
+            outputImaginary(upper) = im; outputImaginary(lower) = if row == column then 0.0 else -im
+            index += 1; k += 1
+          column += 1
+        row += 1
+      FrequencyAxis.realFft(plan.stft.nfft, plan.stft.sampleRate).map(axis =>
+        Some(new CsdMatrix(plan.channels, plan.binCount, outputReal.result(), outputImaginary.result(), count, axis)))
