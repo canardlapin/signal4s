@@ -12,13 +12,69 @@ final case class CsdResources(stateBytes: BigInt, scratchBytes: BigInt,
 /** Owned full matrix in ((row * channels + column) * bins + frequency) order.
   * S(i,j) = mean(conj(X_i) * X_j), one-sided density. No degrees-of-freedom claim.
   */
-final class CsdMatrix private[fft] (val channels: Int, val binCount: Int,
-    val real: DVec, val imaginary: DVec, val acceptedWindows: Long,
-    val frequencies: FrequencyAxis):
-  def apply(row: Int, column: Int, bin: Int): Complex =
+sealed trait CsdEstimate:
+  def channels: Int
+  def binCount: Int
+  def real: DVec
+  def imaginary: DVec
+  def acceptedWindows: Long
+  def sourceFrequencies: FrequencyAxis
+  def frequencyGroups: Vector[Vector[Int]]
+  final def apply(row: Int, column: Int, bin: Int): Complex =
     require(row >= 0 && row < channels && column >= 0 && column < channels && bin >= 0 && bin < binCount)
     val index = (row * channels + column) * binCount + bin
     Complex(real(index), imaginary(index))
+
+final class CsdMatrix private[fft] (val channels: Int, val binCount: Int,
+    val real: DVec, val imaginary: DVec, val acceptedWindows: Long,
+    val frequencies: FrequencyAxis) extends CsdEstimate:
+  def sourceFrequencies: FrequencyAxis = frequencies
+  val frequencyGroups: Vector[Vector[Int]] = Vector.tabulate(binCount)(i => Vector(i))
+  /** Common nonnegative averaging preserves density units, rather than integrating power. */
+  def averageBins(groups: Vector[Vector[Int]], numericBudgetBytes: BigInt): Either[SignalError, CsdGroupedMatrix] =
+    for
+      bytes <- CsdGroupedMatrix.inspect(channels, binCount, groups)
+      _ <- if bytes <= numericBudgetBytes then Right(()) else Left(BoundedCsdPlan.failure("grouped CSD output exceeds budget"))
+    yield
+      val size = channels * channels * groups.size
+      val outputReal = DVecBuilder.zeros(size)
+      val outputImaginary = DVecBuilder.zeros(size)
+      for row <- 0 until channels; column <- row until channels; group <- groups.indices do
+        val re = ExactSum.zero(); val im = ExactSum.zero(); val count = ExactSum.zero()
+        groups(group).foreach: bin =>
+          re.add(apply(row, column, bin).real).fold(e => throw new IllegalStateException(e.toString), identity)
+          im.add(apply(row, column, bin).imaginary).fold(e => throw new IllegalStateException(e.toString), identity)
+        count.add(groups(group).size.toDouble)
+        val realMean = re.ratio(count).fold(e => throw new IllegalStateException(e.toString), identity)
+        val imaginaryMean = if row == column then 0.0 else im.ratio(count).fold(e => throw new IllegalStateException(e.toString), identity)
+        val upper = (row * channels + column) * groups.size + group
+        val lower = (column * channels + row) * groups.size + group
+        outputReal(upper) = realMean; outputReal(lower) = realMean
+        outputImaginary(upper) = imaginaryMean
+        outputImaginary(lower) = if row == column then 0.0 else -imaginaryMean
+      new CsdGroupedMatrix(channels, outputReal.result(), outputImaginary.result(), acceptedWindows, frequencies, groups)
+
+/** Owned arithmetic group means; source bins and their original axis remain explicit. */
+final class CsdGroupedMatrix private[fft] (val channels: Int, val real: DVec, val imaginary: DVec,
+    val acceptedWindows: Long, val sourceFrequencies: FrequencyAxis,
+    val frequencyGroups: Vector[Vector[Int]]) extends CsdEstimate:
+  val binCount: Int = frequencyGroups.size
+
+object CsdGroupedMatrix:
+  /** Includes the retained full source matrix and builder/result overlap. */
+  def inspect(channels: Int, bins: Int, groups: Vector[Vector[Int]]): Either[SignalError, BigInt] =
+    var previous = -1
+    val ordered = groups.nonEmpty && groups.forall: group =>
+      group.nonEmpty && group.forall: bin =>
+        val valid = bin > previous && bin < bins
+        previous = bin
+        valid
+    val full = BigInt(channels) * channels * bins
+    val result = BigInt(channels) * channels * groups.size
+    if channels <= 0 || bins <= 0 || !ordered || full > Int.MaxValue || result > Int.MaxValue then
+      Left(BoundedCsdPlan.failure("nonempty ordered disjoint frequency groups inside bounded CSD shape required"))
+    else Right(full * 16 + BigInt(bins) * 4 + result * 32 + BigInt(groups.iterator.map(_.size).sum) * 4 +
+      ExactSum.resources.stateBytes * 3 + ExactSum.resources.ratioScratchBytes)
 
 /** Common-window estimator; the caller determines which complete windows exist.
   * A single invalid row refuses the entire frame before any spectral sum changes.
@@ -43,7 +99,7 @@ object BoundedCsdPlan:
     else BoundedStftPlan.inspect(frameLength, nfft).map: fft =>
       val exact = ExactSum.resources
       val state = triangle * 2 * exact.stateBytes
-      val output = full * 16 * 2 // Builders and detached values may coexist.
+      val output = full * 16 * 2 + bins * 4 // Builders, detached values and original bin membership.
       val scratch = triangle * 16 + BigInt(channels) * bins * 32 + fft.peakBytes +
         exact.ratioScratchBytes + exact.stateBytes
       CsdResources(state, scratch, output, fft.constructionAdditionalBytes + fft.windowBytes)

@@ -39,12 +39,20 @@ products exact. Empty accumulators return `None`. Merge only independent
 accumulators constructed from the same plan instance. Each accumulator has one
 owner; simultaneous mutations are unsupported.
 
+`crossResult.averageBins(groups, budget)` optionally computes arithmetic means
+over nonempty, ordered, disjoint groups of original FFT-bin indices. Groups may
+omit bins; every matrix entry uses the same groups. `sourceFrequencies` and
+`frequencyGroups` retain the original axis and exact bin membership. The result
+remains a density, not integrated band power. Admission includes the retained
+source matrix and the new output builders; inspect it with
+`CsdGroupedMatrix.inspect(channels, bins, groups)` before allocating the result.
+
 The portable reference tests compare four pinned SciPy cases. The reviewed
 error bound is `1e-30 + 1e-10 * sqrt(p_i * p_j)`, with each `p` the maximum
 reference diagonal over all bins. Original per-bin bounds failed at spectral
 nulls; their diagnostics are retained. Hermitian symmetry and a real diagonal
 are exact construction properties. No coherence, independence, inferential
-degrees of freedom, grouped-frequency API or performance claim is supplied.
+degrees of freedom or performance claim is supplied.
 
 ## Finite-support Morlet coefficients
 

@@ -93,6 +93,27 @@ class BoundedCsdSuite extends munit.FunSuite:
     assert(BoundedCsdPlan.withinBudget(3, window, fs, 8, p.resources.peakBytes - 1).isLeft)
     assert(p.newAccumulator(p.resources.peakBytes).isRight)
 
+  test("common bin groups preserve complex density means Hermitian symmetry and explicit axes"):
+    val matrix = result(plan(), Vector(inputs))
+    val groups = Vector(Vector(0, 1), Vector(2, 4))
+    val required = CsdGroupedMatrix.inspect(3, matrix.binCount, groups).orThrow
+    assert(matrix.averageBins(groups, required - 1).isLeft)
+    val average = matrix.averageBins(groups, required).orThrow
+    assertEquals(average.frequencyGroups, groups)
+    assertEquals(average.acceptedWindows, matrix.acceptedWindows)
+    assertEquals(average.sourceFrequencies, matrix.frequencies)
+    for row <- 0 until 3; column <- 0 until 3; group <- groups.indices do
+      close(average(row, column, group).real, groups(group).map(k => matrix(row, column, k).real).sum / groups(group).size, 0)
+      close(average(row, column, group).imaginary, groups(group).map(k => matrix(row, column, k).imaginary).sum / groups(group).size, 0)
+      close(average(row, column, group).real, average(column, row, group).real, 0)
+      close(average(row, column, group).imaginary, -average(column, row, group).imaginary, 0)
+    for invalid <- Vector(Vector.empty, Vector(Vector.empty), Vector(Vector(-1)), Vector(Vector(5)),
+        Vector(Vector(1, 1)), Vector(Vector(2, 1)), Vector(Vector(1), Vector(1))) do
+      assert(matrix.averageBins(invalid, budget).isLeft)
+    val identity = matrix.averageBins(Vector.tabulate(matrix.binCount)(i => Vector(i)), budget).orThrow
+    assertEquals(identity.real.toSeq, matrix.real.toSeq)
+    assertEquals(identity.imaginary.toSeq, matrix.imaginary.toSeq)
+
   test("pinned SciPy CSD agrees across quadrature, mean detrending, odd FFT and impulses"):
     for fixture <- CsdGoldens.cases do
       val taps = Window.fromTaps(DVec.fromSeq(fixture.window), WindowConvention.Periodic).orThrow
