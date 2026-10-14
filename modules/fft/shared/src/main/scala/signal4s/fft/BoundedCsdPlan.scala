@@ -112,8 +112,14 @@ object BoundedCsdPlan:
       stft <- BoundedStftPlan.withinBudget(window, sampleRate, nfft, numericBudgetBytes, detrend, StftScaling.Density)
     yield new BoundedCsdPlan(channels, stft, resource)
 
+/** Ordinary and multitaper estimators expose the same common-frame transaction. */
+trait CsdFrameAccumulator:
+  def acceptedWindows: Long
+  def accumulateFrame(rows: IndexedSeq[DVec]): Either[SignalError,Unit]
+  def finishOwned(): Either[SignalError,Option[CsdMatrix]]
+
 /** Single owner; frequency states are fixed-size and a frame commits atomically. */
-final class CsdAccumulator private[fft] (val plan: BoundedCsdPlan, workspace: StftWorkspace):
+final class CsdAccumulator private[fft] (val plan: BoundedCsdPlan, workspace: StftWorkspace) extends CsdFrameAccumulator:
   private val real = Array.fill(plan.cells)(ExactSum.zero())
   private val imaginary = Array.fill(plan.cells)(ExactSum.zero())
   private val stagedReal = new Array[Double](plan.cells)
@@ -131,28 +137,20 @@ final class CsdAccumulator private[fft] (val plan: BoundedCsdPlan, workspace: St
         case Left(error) => return Left(error)
         case Right(frame) => spectra(row) = frame.bins
       row += 1
-    var index = 0
-    row = 0
-    while row < plan.channels do
-      var column = row
-      while column < plan.channels do
-        var k = 0
-        while k < plan.binCount do
-          val a = spectra(row); val b = spectra(column)
-          val fold = if k == 0 || (plan.stft.nfft % 2 == 0 && k == plan.binCount - 1) then 1.0 else 2.0
-          val re = (a.real(k) * b.real(k) + a.imaginary(k) * b.imaginary(k)) * fold
-          val im = if row == column then 0.0 else (a.real(k) * b.imaginary(k) - a.imaginary(k) * b.real(k)) * fold
-          if !re.isFinite || !im.isFinite then return Left(BoundedCsdPlan.failure("nonfinite cross-periodogram"))
-          stagedReal(index) = re; stagedImaginary(index) = im
-          index += 1; k += 1
-        column += 1
-      row += 1
+    CrossPeriodogram.write(spectra,plan.stft.nfft,stagedReal,stagedImaginary).flatMap(_=>accumulateSpectrum(stagedReal,stagedImaginary))
+
+  /** Internal upper-triangle frame contribution, fully preflighted before commit. */
+  private[fft] def accumulateSpectrum(frameReal: Array[Double],frameImaginary: Array[Double]): Either[SignalError,Unit] =
+    if count==BoundedCsdPlan.MaxWindows then return Left(BoundedCsdPlan.failure("exact window count capacity exceeded"))
+    if frameReal.length!=plan.cells || frameImaginary.length!=plan.cells ||
+      !frameReal.forall(_.isFinite) || !frameImaginary.forall(_.isFinite) then
+      return Left(BoundedCsdPlan.failure("invalid common-frame spectrum shape or finite capacity"))
     // Every state receives at most one term per frame. The global exact count
     // preflight proves all add capacities before this first observable update.
-    index = 0
+    var index = 0
     while index < plan.cells do
-      real(index).add(stagedReal(index)).fold(e => throw new IllegalStateException(e.toString), identity)
-      imaginary(index).add(stagedImaginary(index)).fold(e => throw new IllegalStateException(e.toString), identity)
+      real(index).add(frameReal(index)).fold(e => throw new IllegalStateException(e.toString), identity)
+      imaginary(index).add(frameImaginary(index)).fold(e => throw new IllegalStateException(e.toString), identity)
       index += 1
     count += 1
     Right(())

@@ -44,3 +44,5 @@ The current checkout is a `0.1.0-SNAPSHOT` implementation snapshot. The
 support page distinguishes implemented paths from deliberately deferred
 features and known limitations; the site should not be read as a release or
 artifact-availability claim.
+
+The [fixed equal-weight multitaper reference](reference/multitaper.md) specifies DPSS selection, complex density and bounded storage.
